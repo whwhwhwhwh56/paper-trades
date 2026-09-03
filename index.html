@@ -125,7 +125,7 @@ const CONFIG = { owner: "", repo: "", branch: "main" };   // auto-detected on *.
 const S = {
   data: null, sha: null, prices: {}, snapshot: {}, snapshotAsof: null,
   refreshedAt: null, refreshing: false, token: null, vault: undefined,
-  sort: { open: ["ret", -1], closed: ["ret", -1], watch: ["up", -1] },
+  sort: { open: ["ret", -1], closed: ["ret", -1], watch: ["up", -1], hard: ["added", -1] },
   route: null, modal: null, toast: null, drafts: {}
 };
 
@@ -157,7 +157,7 @@ function toast(msg, err) { S.toast = { msg, err }; renderToast(); clearTimeout(S
 function renderToast() { let t = $("#toast"); if (t) t.remove(); if (!S.toast) return; t = document.createElement("div"); t.id = "toast"; t.className = "toast" + (S.toast.err ? " err" : ""); t.textContent = S.toast.msg; document.body.appendChild(t); }
 
 /* ---------- data loading ---------- */
-function emptyBook() { return { version: 1, updated: null, trades: [], watchlist: [], theses: {}, valuations: {} }; }
+function emptyBook() { return { version: 1, updated: null, trades: [], watchlist: [], too_hard: [], theses: {}, valuations: {} }; }
 async function loadBook() {
   if (LOCAL) { try { const r = await fetch("/api/book?t=" + Date.now(), { cache: "no-store" }); if (r.ok) { S.data = normalise(await r.json()); return; } } catch (e) { } }
   // With a token we read through the API (always fresh); otherwise the Pages copy (fresh within ~1 min of a commit).
@@ -172,7 +172,7 @@ async function loadBook() {
     S.data = normalise(r.ok ? await r.json() : emptyBook());
   } catch (e) { S.data = emptyBook(); }
 }
-function normalise(d) { const b = emptyBook(); Object.assign(b, d || {}); b.trades ||= []; b.watchlist ||= []; b.theses ||= {}; b.valuations ||= {}; return b; }
+function normalise(d) { const b = emptyBook(); Object.assign(b, d || {}); b.trades ||= []; b.watchlist ||= []; b.too_hard ||= []; b.theses ||= {}; b.valuations ||= {}; return b; }
 async function loadSnapshot() {
   try { const r = await fetch("data/prices.json?t=" + Date.now(), { cache: "no-store" }); if (r.ok) { const j = await r.json(); S.snapshot = j.prices || {}; S.snapshotAsof = j.asof || null; } } catch (e) { }
 }
@@ -187,6 +187,7 @@ function allTickers() {
   const set = new Map();
   for (const t of S.data.trades) set.set(t.ticker, t.quote_symbol || t.ticker);
   for (const w of S.data.watchlist) set.set(w.ticker, w.quote_symbol || w.ticker);
+  for (const h of S.data.too_hard) set.set(h.ticker, h.quote_symbol || h.ticker);
   return set;
 }
 async function refreshPrices() {
@@ -446,6 +447,48 @@ function promoteWatch(id) {
       commitBook(d => { t.id = uid("T", d.trades); d.trades.push(t); if (!fd.keep) d.watchlist = d.watchlist.filter(x => x.id !== id); }, `${w.ticker}: enter from watchlist @ ${t.entry_price}`);
     }));
 }
+/* ---------- too-hard pile ---------- */
+function hardEntry(fd, from) {
+  return { id: null, ticker: fd.ticker.trim().toUpperCase(), added: fd.added, price_at_add: num(fd.price_at_add), quote_symbol: (fd.quote_symbol || "").trim().toUpperCase() || null, reason: (fd.reason || "").trim(),
+    from_watch: from ? { id: from.id, added: from.added, price_at_add: num(from.price_at_add), target_price: num(from.target_price), notes: from.notes || "" } : null, created: new Date().toISOString() };
+}
+function addTooHardForm(prefill) {
+  openModal(`<h3>Add to the too-hard pile</h3><p class="hint">A name you looked at and set aside because you could not see the business clearly. It stays here, dated, so you can see later what setting it aside cost or saved.</p><form id="f">
+    <div class="row"><label class="f grow">Ticker<input name="ticker" required value="${esc(prefill || "")}" style="text-transform:uppercase"></label>
+    <label class="f grow">Added<input name="added" type="date" value="${todayISO()}" required></label></div>
+    <div class="row" style="margin-top:8px"><label class="f grow">Price when added<input name="price_at_add" type="number" step="any" min="0"></label><button type="button" class="small" id="uselive" style="align-self:flex-end">Use live</button></div>
+    <label class="f" style="margin-top:8px">Quote symbol (optional)<input name="quote_symbol" placeholder="CNBC form for non-US, e.g. NESN-CH"></label>
+    <label class="f" style="margin-top:8px">Why it is too hard<input name="reason" placeholder="what you could not see clearly"></label>
+    <div class="row" style="margin-top:12px;justify-content:flex-end"><button type="button" onclick="closeModal()">Cancel</button><button class="primary" type="submit">Add</button></div></form>`,
+    m => {
+      m.querySelector("#uselive").onclick = async () => { const tk = m.querySelector("[name=ticker]").value.trim().toUpperCase(); const qs = m.querySelector("[name=quote_symbol]").value.trim().toUpperCase() || tk; if (!tk) return; const q = await quoteOne(qs); if (q) m.querySelector("[name=price_at_add]").value = q.price; else toast("No live quote for " + qs, true); };
+      m.querySelector("#f").addEventListener("submit", e => {
+        e.preventDefault(); const fd = Object.fromEntries(new FormData(e.target).entries()); const h = hardEntry(fd, null);
+        closeModal(); commitBook(d => { h.id = uid("H", d.too_hard); d.too_hard.push(h); }, `${h.ticker}: too hard`);
+      });
+    });
+}
+function watchToTooHard(id) {
+  const w = S.data.watchlist.find(x => x.id === id); if (!w) return;
+  openModal(`<h3>Move ${esc(w.ticker)} to the too-hard pile</h3><p class="hint">On the watchlist since ${esc(w.added)}${num(w.price_at_add) ? ` at ${fmtN(w.price_at_add)}` : ""}. That date and price are kept on the record.</p><form id="f">
+    <div class="row"><label class="f grow">Moved on<input name="added" type="date" value="${todayISO()}" required></label>
+    <label class="f grow">Price now<input name="price_at_add" type="number" step="any" min="0" value="${px(w.ticker) ?? ""}"></label></div>
+    <label class="f" style="margin-top:8px">Why it is too hard<input name="reason" placeholder="what you could not see clearly" value="${esc(w.notes || "")}"></label>
+    <div class="row" style="margin-top:12px;justify-content:flex-end"><button type="button" onclick="closeModal()">Cancel</button><button class="primary" type="submit">Move</button></div></form>`,
+    m => m.querySelector("#f").addEventListener("submit", e => {
+      e.preventDefault(); const fd = Object.fromEntries(new FormData(e.target).entries()); closeModal();
+      const h = hardEntry({ ...fd, ticker: w.ticker, quote_symbol: w.quote_symbol || "" }, w);
+      commitBook(d => { h.id = uid("H", d.too_hard); d.too_hard.push(h); d.watchlist = d.watchlist.filter(x => x.id !== id); }, `${w.ticker}: watchlist -> too hard`);
+    }));
+}
+function removeTooHard(id) { const h = S.data.too_hard.find(x => x.id === id); if (!h) return; confirmBox("Remove from the too-hard pile", `Drop ${h.ticker} from the too-hard pile? The commit history keeps a copy.`, () => commitBook(d => { d.too_hard = d.too_hard.filter(x => x.id !== id); }, `${h.ticker}: drop from too hard`)); }
+function tooHardToWatch(id) {
+  const h = S.data.too_hard.find(x => x.id === id); if (!h) return;
+  confirmBox("Back to the watchlist", `Move ${h.ticker} back onto the watchlist, dated today at the current price?`, () => commitBook(d => {
+    const w = { id: null, ticker: h.ticker, added: todayISO(), price_at_add: px(h.ticker), target_price: h.from_watch?.target_price ?? null, qty: null, quote_symbol: h.quote_symbol || null, notes: h.reason || "", from_too_hard: h.id, created: new Date().toISOString() };
+    w.id = uid("W", d.watchlist); d.watchlist.push(w); d.too_hard = d.too_hard.filter(x => x.id !== id);
+  }, `${h.ticker}: too hard -> watchlist`));
+}
 function saveThesis(tk) {
   const ta = $("#thesis-ta"); if (!ta) return; const text = ta.value;
   commitBook(d => { d.theses[tk] = { text, updated: new Date().toISOString() }; }, `${tk}: thesis`).then(ok => { if (ok) { delete S.drafts[tk]; try { localStorage.removeItem("pb_draft_" + tk); } catch (e) { } } });
@@ -480,10 +523,10 @@ async function ensureQuote(tk) {
 }
 function parseRoute() { const h = location.hash.replace(/^#\/?/, ""); if (h.startsWith("t/")) return { view: "ticker", tk: decodeURIComponent(h.slice(2)).toUpperCase() }; if (h === "setup") return { view: "setup" }; return { view: "home" }; }
 function header() {
-  return `<header class="top"><div class="brand"><h1><a href="#/" style="color:inherit">Serene Paper Book</a></h1><small>paper trades · watchlist · intrinsic value</small></div>
+  return `<header class="top"><div class="brand"><h1><a href="#/" style="color:inherit">Serene Paper Book</a></h1><small>paper trades · watchlist · too-hard pile · intrinsic value</small></div>
   <div class="toolbar"><span class="status" id="status"></span>
   <button id="refresh" class="primary" ${S.refreshing ? "disabled" : ""}>${S.refreshing ? "Refreshing…" : "↻ Refresh prices"}</button>
-  ${S.token ? `<button onclick="addTradeForm()">+ Trade</button><button onclick="addWatchForm()">+ Watch</button>${LOCAL ? '<span class="pill acc" title="served by serve_local.py — edits write to data/portfolio.json">local edit mode</span>' : `<button class="ghost" onclick="lock()" title="Lock editing">🔓 Lock</button>`}` : `<button class="ghost" onclick="openUnlock()">🔒 Unlock editing</button>`}
+  ${S.token ? `<button onclick="addTradeForm()">+ Trade</button><button onclick="addWatchForm()">+ Watch</button><button onclick="addTooHardForm()">+ Too hard</button>${LOCAL ? '<span class="pill acc" title="served by serve_local.py — edits write to data/portfolio.json">local edit mode</span>' : `<button class="ghost" onclick="lock()" title="Lock editing">🔓 Lock</button>`}` : `<button class="ghost" onclick="openUnlock()">🔒 Unlock editing</button>`}
   <button class="ghost" id="theme" title="Toggle theme">◐</button></div></header>`;
 }
 function renderStatus() { const s = $("#status"); if (!s) return; s.innerHTML = statusText(); const b = $("#refresh"); if (b) { b.disabled = S.refreshing; b.textContent = S.refreshing ? "Refreshing…" : "↻ Refresh prices"; } }
@@ -508,18 +551,22 @@ function homeView() {
   const openRows = S.data.trades.filter(t => !t.exit_date).map(t => { const m = tradeMetrics(t); const v = valuationFor(t.ticker); return { t, ...m, ticker: t.ticker, entry: num(t.entry_price), entry_date: t.entry_date, base: v ? num(v.base) : null, up: v && m.p ? v.base / m.p - 1 : null }; });
   const closedRows = S.data.trades.filter(t => t.exit_date).map(t => { const m = tradeMetrics(t); return { t, ...m, ticker: t.ticker, entry: num(t.entry_price), entry_date: t.entry_date, exit_date: t.exit_date, exit: num(t.exit_price) }; });
   const watchRows = S.data.watchlist.map(w => { const p = px(w.ticker), v = valuationFor(w.ticker); const base = v ? num(v.base) : null; return { w, ticker: w.ticker, added: w.added, at: num(w.price_at_add), p, since: p !== null && num(w.price_at_add) ? p / w.price_at_add - 1 : null, base, up: p !== null && base ? base / p - 1 : null, target: num(w.target_price), vstarget: p !== null && num(w.target_price) ? p / w.target_price - 1 : null }; });
-  const [ok, od] = S.sort.open, [ck, cd] = S.sort.closed, [wk, wd] = S.sort.watch;
+  const hardRows = S.data.too_hard.map(h => { const p = px(h.ticker); const at = num(h.price_at_add); return { h, ticker: h.ticker, added: h.added, watched: h.from_watch?.added || null, at, p, since: p !== null && at ? p / at - 1 : null }; });
+  const [ok, od] = S.sort.open, [ck, cd] = S.sort.closed, [wk, wd] = S.sort.watch, [hk, hd] = S.sort.hard;
   const ed = !!S.token;
   const openT = openRows.length ? `<div class="tbl"><table><thead><tr><th class="l">#</th>${th("open", "ticker", "Ticker", "l")}${th("open", "entry_date", "Entered", "l")}<th>Side · qty</th>${th("open", "entry", "Entry")}${th("open", "p", "Price")}${th("open", "ret", "Return")}${th("open", "irr", "IRR p.a.")}${th("open", "pnl", "P&amp;L")}${th("open", "days", "Days")}${th("open", "base", "Intrinsic")}${th("open", "up", "Upside")}${ed ? "<th></th>" : ""}</tr></thead><tbody>` +
     sortRows(openRows, ok, od).map((r, i) => `<tr><td class="rank">${i + 1}</td><td class="tk l"><a href="#/t/${r.ticker}">${r.ticker}</a></td><td class="l">${r.entry_date}</td><td><span class="pill ${r.t.side === "SHORT" ? "warn" : ""}">${r.t.side}</span> ${fmtN(r.t.qty, 0)}</td><td>${fmtN(r.entry)}</td><td>${priceCell(r.ticker)}</td><td class="${cls(r.ret)}">${fmtP(r.ret)}</td><td class="${cls(r.irr)}" title="${r.days < 30 ? "annualised from under 30 days — treat with caution" : ""}">${fmtP(r.irr)}${r.days < 30 && r.irr !== null ? "<sup>†</sup>" : ""}</td><td class="${cls(r.pnl)}">${fmtMoney(r.pnl)}</td><td>${r.days}</td><td>${r.base !== null ? fmtN(r.base) : '<span class="muted">—</span>'}</td><td class="${cls(r.up)}">${fmtP(r.up)}</td>${ed ? `<td class="nowrap"><button class="small" onclick="exitTradeForm('${r.t.id}')">Exit</button> <button class="small ghost" onclick="deleteTrade('${r.t.id}')" title="delete">✕</button></td>` : ""}</tr>`).join("") + `</tbody></table></div><div class="hint" style="padding:8px 16px">† annualised from a holding period under 30 days. Intrinsic = base-case owner-earnings value per share; upside = intrinsic ÷ price − 1.</div>` : `<div class="empty">No open positions. ${ed ? 'Use <b>+ Trade</b> to enter one.' : 'Unlock editing to enter one.'}</div>`;
   const closedT = closedRows.length ? `<div class="tbl"><table><thead><tr><th class="l">#</th>${th("closed", "ticker", "Ticker", "l")}${th("closed", "entry_date", "Entered", "l")}${th("closed", "exit_date", "Exited", "l")}<th>Side · qty</th>${th("closed", "entry", "Entry")}${th("closed", "exit", "Exit")}${th("closed", "ret", "Return")}${th("closed", "irr", "IRR p.a.")}${th("closed", "pnl", "P&amp;L")}${th("closed", "days", "Days")}${ed ? "<th></th>" : ""}</tr></thead><tbody>` +
     sortRows(closedRows, ck, cd).map((r, i) => `<tr><td class="rank">${i + 1}</td><td class="tk l"><a href="#/t/${r.ticker}">${r.ticker}</a></td><td class="l">${r.entry_date}</td><td class="l">${r.exit_date}</td><td><span class="pill ${r.t.side === "SHORT" ? "warn" : ""}">${r.t.side}</span> ${fmtN(r.t.qty, 0)}</td><td>${fmtN(r.entry)}</td><td>${fmtN(r.exit)}</td><td class="${cls(r.ret)}">${fmtP(r.ret)}</td><td class="${cls(r.irr)}">${fmtP(r.irr)}${r.days < 30 && r.irr !== null ? "<sup>†</sup>" : ""}</td><td class="${cls(r.pnl)}">${fmtMoney(r.pnl)}</td><td>${r.days}</td>${ed ? `<td class="nowrap"><button class="small ghost" onclick="reopenTrade('${r.t.id}')">Reopen</button> <button class="small ghost" onclick="deleteTrade('${r.t.id}')">✕</button></td>` : ""}</tr>`).join("") + `</tbody></table></div>` : `<div class="empty">Nothing closed yet.</div>`;
   const watchT = watchRows.length ? `<div class="tbl"><table><thead><tr><th class="l">#</th>${th("watch", "ticker", "Ticker", "l")}${th("watch", "added", "Added", "l")}${th("watch", "at", "Price then")}${th("watch", "p", "Price now")}${th("watch", "since", "Since added")}${th("watch", "base", "Intrinsic")}${th("watch", "up", "Upside")}${th("watch", "target", "Target")}${th("watch", "vstarget", "vs target")}${ed ? "<th></th>" : ""}</tr></thead><tbody>` +
-    sortRows(watchRows, wk, wd).map((r, i) => `<tr><td class="rank">${i + 1}</td><td class="tk l"><a href="#/t/${r.ticker}">${r.ticker}</a>${r.w.qty ? ` <span class="muted">×${fmtN(r.w.qty, 0)}</span>` : ""}</td><td class="l">${r.added}</td><td>${fmtN(r.at)}</td><td>${priceCell(r.ticker)}</td><td class="${cls(r.since)}">${fmtP(r.since)}</td><td>${r.base !== null ? fmtN(r.base) : '<span class="muted">—</span>'}</td><td class="${cls(r.up)}">${fmtP(r.up)}</td><td>${fmtN(r.target)}</td><td class="${r.vstarget === null ? "muted" : r.vstarget <= 0 ? "pos" : ""}">${r.vstarget === null ? "—" : r.vstarget <= 0 ? "at / below target" : fmtP(r.vstarget) + " above"}</td>${ed ? `<td class="nowrap"><button class="small" onclick="promoteWatch('${r.w.id}')">Enter</button> <button class="small ghost" onclick="removeWatch('${r.w.id}')">✕</button></td>` : ""}</tr>`).join("") + `</tbody></table></div><div class="hint" style="padding:8px 16px">Ranked by upside to the base-case intrinsic value, largest first.</div>` : `<div class="empty">Watchlist is empty. ${ed ? 'Use <b>+ Watch</b> to add a name.' : ''}</div>`;
+    sortRows(watchRows, wk, wd).map((r, i) => `<tr><td class="rank">${i + 1}</td><td class="tk l"><a href="#/t/${r.ticker}">${r.ticker}</a>${r.w.qty ? ` <span class="muted">×${fmtN(r.w.qty, 0)}</span>` : ""}</td><td class="l">${r.added}</td><td>${fmtN(r.at)}</td><td>${priceCell(r.ticker)}</td><td class="${cls(r.since)}">${fmtP(r.since)}</td><td>${r.base !== null ? fmtN(r.base) : '<span class="muted">—</span>'}</td><td class="${cls(r.up)}">${fmtP(r.up)}</td><td>${fmtN(r.target)}</td><td class="${r.vstarget === null ? "muted" : r.vstarget <= 0 ? "pos" : ""}">${r.vstarget === null ? "—" : r.vstarget <= 0 ? "at / below target" : fmtP(r.vstarget) + " above"}</td>${ed ? `<td class="nowrap"><button class="small" onclick="promoteWatch('${r.w.id}')">Enter</button> <button class="small ghost" onclick="watchToTooHard('${r.w.id}')" title="move to the too-hard pile">Too hard</button> <button class="small ghost" onclick="removeWatch('${r.w.id}')">✕</button></td>` : ""}</tr>`).join("") + `</tbody></table></div><div class="hint" style="padding:8px 16px">Ranked by upside to the base-case intrinsic value, largest first.</div>` : `<div class="empty">Watchlist is empty. ${ed ? 'Use <b>+ Watch</b> to add a name.' : ''}</div>`;
+  const hardT = hardRows.length ? `<div class="tbl"><table><thead><tr><th class="l">#</th>${th("hard", "ticker", "Ticker", "l")}${th("hard", "added", "Added", "l")}${th("hard", "watched", "Watched since", "l")}${th("hard", "at", "Price then")}${th("hard", "p", "Price now")}${th("hard", "since", "Since added")}<th class="l">Why too hard</th>${ed ? "<th></th>" : ""}</tr></thead><tbody>` +
+    sortRows(hardRows, hk, hd).map((r, i) => `<tr><td class="rank">${i + 1}</td><td class="tk l"><a href="#/t/${r.ticker}">${r.ticker}</a></td><td class="l">${r.added}</td><td class="l">${r.watched ? esc(r.watched) : '<span class="muted">—</span>'}</td><td>${fmtN(r.at)}</td><td>${priceCell(r.ticker)}</td><td class="${cls(r.since)}">${fmtP(r.since)}</td><td class="l" style="white-space:normal;max-width:360px">${r.h.reason ? esc(r.h.reason) : '<span class="muted">—</span>'}</td>${ed ? `<td class="nowrap"><button class="small ghost" onclick="tooHardToWatch('${r.h.id}')" title="back to the watchlist">→ Watch</button> <button class="small ghost" onclick="removeTooHard('${r.h.id}')">✕</button></td>` : ""}</tr>`).join("") + `</tbody></table></div><div class="hint" style="padding:8px 16px">Names set aside because the business could not be seen clearly. <em>Watched since</em> is the original watchlist date where the name came from there; <em>since added</em> is the price move since it entered the pile.</div>` : `<div class="empty">The too-hard pile is empty. ${ed ? 'Use <b>+ Too hard</b>, or <b>Too hard</b> on a watchlist row.' : ''}</div>`;
   return tiles +
     `<div class="card"><div class="hd"><h2>Open positions</h2><span class="sub">ranked best to worst by return to date · click a column to re-rank</span></div>${openT}</div>` +
     `<div class="card"><div class="hd"><h2>Watchlist</h2><span class="sub">names waiting for a price</span></div>${watchT}</div>` +
-    `<div class="card"><div class="hd"><h2>Closed trades</h2><span class="sub">realised results</span></div>${closedT}</div>`;
+    `<div class="card"><div class="hd"><h2>Closed trades</h2><span class="sub">realised results</span></div>${closedT}</div>` +
+    `<div class="card"><div class="hd"><h2>Too-hard pile</h2><span class="sub">names set aside, with the date and price</span></div>${hardT}</div>`;
 }
 
 function valBar(v, p) {
@@ -538,7 +585,7 @@ function valBar(v, p) {
 }
 
 function tickerView(tk) {
-  const trades = S.data.trades.filter(t => t.ticker === tk), watch = S.data.watchlist.filter(w => w.ticker === tk);
+  const trades = S.data.trades.filter(t => t.ticker === tk), watch = S.data.watchlist.filter(w => w.ticker === tk), hard = S.data.too_hard.filter(h => h.ticker === tk);
   const v = valuationFor(tk), th = S.data.theses[tk], q = S.prices[tk], p = px(tk);
   const name = q?.name || v?.name || "";
   const ed = !!S.token;
@@ -560,7 +607,8 @@ function tickerView(tk) {
   const tradeCard = `<div class="card"><div class="hd"><h2>Trades in ${esc(tk)}</h2><span class="sub">${openPos.length} open · ${trades.length - openPos.length} closed</span></div>${rows.length ? `<div class="tbl"><table><thead><tr><th class="l">Entered</th><th class="l">Exited</th><th>Side · qty</th><th>Entry</th><th>Exit / now</th><th>Return</th><th>IRR p.a.</th><th>P&amp;L</th><th>Days</th>${ed ? "<th></th>" : ""}</tr></thead><tbody>` +
     rows.map(({ t, m }) => `<tr><td class="l">${t.entry_date}</td><td class="l">${t.exit_date || '<span class="pill good">open</span>'}</td><td><span class="pill ${t.side === "SHORT" ? "warn" : ""}">${t.side}</span> ${fmtN(t.qty, 0)}</td><td>${fmtN(t.entry_price)}</td><td>${m.open ? priceCell(tk) : fmtN(t.exit_price)}</td><td class="${cls(m.ret)}">${fmtP(m.ret)}</td><td class="${cls(m.irr)}">${fmtP(m.irr)}${m.days < 30 && m.irr !== null ? "<sup>†</sup>" : ""}</td><td class="${cls(m.pnl)}">${fmtMoney(m.pnl)}</td><td>${m.days}</td>${ed ? `<td class="nowrap">${m.open ? `<button class="small" onclick="exitTradeForm('${t.id}')">Exit</button>` : `<button class="small ghost" onclick="reopenTrade('${t.id}')">Reopen</button>`} <button class="small ghost" onclick="deleteTrade('${t.id}')">✕</button></td>` : ""}</tr>${t.notes || t.exit_notes ? `<tr><td colspan="${ed ? 10 : 9}" class="l hint" style="white-space:normal">${t.notes ? "Entry: " + esc(t.notes) : ""}${t.notes && t.exit_notes ? " · " : ""}${t.exit_notes ? "Exit: " + esc(t.exit_notes) : ""}</td></tr>` : ""}`).join("") + `</tbody></table></div>` : `<div class="empty">No trades in ${esc(tk)} yet.</div>`}
     ${watch.length ? `<div class="bd hint" style="border-top:1px solid var(--rule)">On the watchlist since ${esc(watch[0].added)}${watch[0].target_price ? ` · target ${fmtN(watch[0].target_price)}` : ""}${watch[0].notes ? ` · ${esc(watch[0].notes)}` : ""}</div>` : ""}
-    ${ed ? `<div class="bd row" style="border-top:1px solid var(--rule)"><button class="small" onclick="addTradeFormFor('${tk}')">+ Trade in ${esc(tk)}</button>${watch.length ? "" : `<button class="small ghost" onclick="addWatchForm('${tk}')">+ Watch</button>`}</div>` : ""}</div>`;
+    ${hard.length ? `<div class="bd hint" style="border-top:1px solid var(--rule)">In the too-hard pile since ${esc(hard[0].added)}${num(hard[0].price_at_add) ? ` at ${fmtN(hard[0].price_at_add)}` : ""}${hard[0].from_watch?.added ? ` · watched from ${esc(hard[0].from_watch.added)}` : ""}${hard[0].reason ? ` · ${esc(hard[0].reason)}` : ""}</div>` : ""}
+    ${ed ? `<div class="bd row" style="border-top:1px solid var(--rule)"><button class="small" onclick="addTradeFormFor('${tk}')">+ Trade in ${esc(tk)}</button>${watch.length ? "" : `<button class="small ghost" onclick="addWatchForm('${tk}')">+ Watch</button>`}${hard.length ? "" : `<button class="small ghost" onclick="addTooHardForm('${tk}')">+ Too hard</button>`}</div>` : ""}</div>`;
   const draft = S.drafts[tk] ?? (() => { try { return localStorage.getItem("pb_draft_" + tk); } catch (e) { return null; } })();
   const thesisCard = `<div class="card"><div class="hd"><h2>Thesis</h2><span class="sub">${th?.updated ? "updated " + esc(th.updated.slice(0, 10)) : "not written yet"}</span></div><div class="bd">
     ${ed ? `<textarea id="thesis-ta" placeholder="Why this business, why this price, what would prove you wrong, what you expect to see and by when.">${esc(draft ?? th?.text ?? "")}</textarea>

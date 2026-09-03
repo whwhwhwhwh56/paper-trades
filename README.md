@@ -10,7 +10,7 @@ editing needs the PIN.
 | Piece | Role |
 |---|---|
 | `index.html` | The whole interface. No build step, no framework. |
-| `data/portfolio.json` | **The database of record.** Trades, watchlist, theses, valuations. Every edit is a git commit, so history is the audit trail. |
+| `data/portfolio.json` | **The database of record.** Trades, watchlist, too-hard pile, theses, valuations. Every edit is a git commit, so history is the audit trail. |
 | `data/prices.json` | Price snapshot written by the scheduled workflow (Massive, key kept as a repo secret). The page falls back to it when a live quote is unavailable. |
 | `data/vault.json` | The editing token, encrypted with the PIN (PBKDF2 + AES-GCM in the browser). Created once from the `#/setup` page. |
 | `refresh_prices.py` | Writes `data/prices.json`. Massive first, Yahoo as fallback. |
@@ -40,8 +40,11 @@ Massive cannot price it, a `yahoo_symbol` (`NESN.SW`).
 ## Editing
 
 Unlock with the PIN. Enter a trade, exit it, delete it, add or promote a watchlist
-name, write a thesis, or type an intrinsic value by hand for a name the pipeline has
-not covered. Each action commits to `data/portfolio.json`; the page re-reads the
+name, move a watchlist name to the too-hard pile (or add a name there directly), write
+a thesis, or type an intrinsic value by hand for a name the pipeline has not covered.
+A too-hard entry records the date and price it was set aside, the reason, and, when it
+came off the watchlist, the original watchlist date and price, so the cost of passing
+can be read later. Each action commits to `data/portfolio.json`; the page re-reads the
 latest version before writing so two editors do not clobber each other.
 
 The PIN is a convenience lock, not a secret: the encrypted token sits in a public
