@@ -351,7 +351,12 @@ function renderModal() {
   document.body.appendChild(m); S.modal.onMount && S.modal.onMount(m);
   const f = m.querySelector("input,textarea,select"); f && f.focus();
 }
-function openUnlock(then) {
+async function openUnlock(then) {
+  if (S.vault === null) {
+    // Pages may still be deploying a freshly committed vault: look at the repository directly.
+    await loadVault();
+    if (S.vault === null && apiBase()) { try { const r = await fetch(apiBase() + "data/vault.json?ref=" + RI.branch, { headers: { Accept: "application/vnd.github.raw+json" }, cache: "no-store" }); if (r.ok) S.vault = await r.json(); } catch (e) { } }
+  }
   if (S.vault === null) { openModal(`<h3>Editing not set up</h3><p>No <code>data/vault.json</code> exists yet. The owner runs the one-time <a href="#/setup">setup</a> to store an encrypted GitHub token.</p><div class="row"><button onclick="closeModal()">Close</button></div>`); return; }
   openModal(`<h3>Unlock editing</h3><p>Enter the editing PIN. It decrypts the repository token in your browser for this session only.</p>
     <form id="unlockf"><input id="pin" type="password" inputmode="numeric" autocomplete="off" placeholder="PIN"><div class="hint" id="pinerr" style="min-height:18px;margin-top:6px"></div>
