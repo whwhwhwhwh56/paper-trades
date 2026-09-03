@@ -3,9 +3,9 @@
 Run from anywhere:  python tools/sync_oe.py [--push] [TICKER ...]
 
 For every ticker on the paper book (trades + watchlist), or the tickers given,
-pull the bear/base/bull value per share, margin of safety, anchor owner earnings,
-growth rates, gate status and quality profile from the local oe.db and write them
-under portfolio.json -> valuations[TICKER] with source "oe.db".  Manual entries
+pull the bear/base/bull value per share from the local oe.db and write them under
+portfolio.json -> valuations[TICKER] with source "oe.db".  Nothing else from the
+pipeline (anchor, growth, gate, reasoning) is published.  Manual entries
 (source "manual") are left alone unless --force is given.
 
 With --push the script does: git pull --rebase, commit, git push, so the public
@@ -34,22 +34,14 @@ def load_valuation(con, tk):
     vals = {s: fnum(v) for s, v in con.execute("SELECT scenario, value_ps FROM valuation WHERE ticker=?", (tk,))}
     if vals.get("BASE") is None:
         return None
-    a = {k: v for k, v in con.execute("SELECT key, value FROM assumption WHERE ticker=?", (tk,))}
-    g = con.execute("SELECT status, reason, latest_fy, anchor_oe, g_bear, g_base, g_bull, dated FROM gate WHERE ticker=?", (tk,)).fetchone()
-    q = con.execute("SELECT profile FROM quality WHERE ticker=?", (tk,)).fetchone()
+    g = con.execute("SELECT dated FROM gate WHERE ticker=?", (tk,)).fetchone()
+    # Only the values themselves go to the public book. The workings (anchor OE,
+    # growth, gate rulings, judge reasoning, shares, net debt) stay in oe.db.
     return {
         "source": "oe.db",
         "name": row[0],
-        "asof": (g[7] if g and g[7] else row[1]) or datetime.date.today().isoformat(),
+        "asof": (g[0] if g and g[0] else row[1]) or datetime.date.today().isoformat(),
         "bear": vals.get("BEAR"), "base": vals.get("BASE"), "bull": vals.get("BULL"),
-        "mos": fnum(a.get("mos")) if fnum(a.get("mos")) is not None else 0.30,
-        "shares": fnum(a.get("shares")), "net_debt": fnum(a.get("net_debt")),
-        "anchor_oe": fnum(g[3]) if g else None, "latest_fy": g[2] if g else None,
-        "g_bear": fnum(g[4]) if g else fnum(a.get("g_bear")),
-        "g_base": fnum(g[5]) if g else fnum(a.get("g_base")),
-        "g_bull": fnum(g[6]) if g else fnum(a.get("g_bull")),
-        "gate": g[0] if g else None, "gate_reason": g[1] if g else None,
-        "profile": q[0] if q else None,
         "synced": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"),
     }
 
@@ -79,7 +71,7 @@ def main(argv):
             continue
         book["valuations"][tk] = v
         changed.append(tk)
-        print("%-6s base %.2f  buy-below %.2f  gate %s" % (tk, v["base"], v["base"] * (1 - v["mos"]), v["gate"]))
+        print("%-6s bear %.2f  base %.2f  bull %.2f" % (tk, v["bear"] or 0, v["base"], v["bull"] or 0))
     if missing:
         print("not on the owner-earnings board:", ", ".join(missing))
     if not changed:

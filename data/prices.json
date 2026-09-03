@@ -1,6 +1,47 @@
 {
- "asof": null,
- "source": "massive",
- "count": 0,
- "prices": {}
+ "asof": "2026-09-03T02:39:36+00:00",
+ "count": 4,
+ "prices": {
+  "AAPL": {
+   "asof": "2026-09-03T00:00:01+00:00",
+   "ccy": "USD",
+   "ext": 324.83,
+   "mkt": "closed",
+   "name": "Apple Inc.",
+   "prev": 325.13,
+   "price": 324.96,
+   "provider": "massive"
+  },
+  "ADBE": {
+   "asof": "2026-09-03T00:00:01+00:00",
+   "ccy": "USD",
+   "ext": 280.7821,
+   "mkt": "closed",
+   "name": "Adobe Inc.",
+   "prev": 286.08,
+   "price": 279.79,
+   "provider": "massive"
+  },
+  "APTV": {
+   "asof": "2026-09-03T00:00:01+00:00",
+   "ccy": "USD",
+   "ext": 45.44,
+   "mkt": "closed",
+   "name": "Aptiv PLC",
+   "prev": 44.85,
+   "price": 45.03,
+   "provider": "massive"
+  },
+  "BKNG": {
+   "asof": "2026-09-03T00:00:01+00:00",
+   "ccy": "USD",
+   "ext": 199.51,
+   "mkt": "closed",
+   "name": "Booking Holdings Inc. Common Stock",
+   "prev": 195.69,
+   "price": 199.6,
+   "provider": "massive"
+  }
+ },
+ "source": "massive"
 }

@@ -121,12 +121,11 @@ code{font-family:var(--mono);font-size:12px;background:var(--surface2);padding:1
    token stored in data/vault.json, and edits are commits.
    ============================================================ */
 const CONFIG = { owner: "", repo: "", branch: "main" };   // auto-detected on *.github.io when left blank
-const OE_BOARD = "https://claude.ai/code/artifact/f7695e13-7562-4b1a-ad2f-51e6050e5fdd";
 
 const S = {
   data: null, sha: null, prices: {}, snapshot: {}, snapshotAsof: null,
   refreshedAt: null, refreshing: false, token: null, vault: undefined,
-  sort: { open: ["ret", -1], closed: ["ret", -1], watch: ["disc", 1] },
+  sort: { open: ["ret", -1], closed: ["ret", -1], watch: ["up", -1] },
   route: null, modal: null, toast: null, drafts: {}
 };
 
@@ -139,6 +138,8 @@ function repoInfo() {
 }
 const RI = repoInfo();
 const apiBase = () => RI ? `https://api.github.com/repos/${RI.owner}/${RI.repo}/contents/` : null;
+// Local mode: served by serve_local.py on this machine — edits write straight to disk, no PIN.
+const LOCAL = (location.hostname === "127.0.0.1" || location.hostname === "localhost");
 
 /* ---------- helpers ---------- */
 const $ = (s, r = document) => r.querySelector(s);
@@ -158,6 +159,7 @@ function renderToast() { let t = $("#toast"); if (t) t.remove(); if (!S.toast) r
 /* ---------- data loading ---------- */
 function emptyBook() { return { version: 1, updated: null, trades: [], watchlist: [], theses: {}, valuations: {} }; }
 async function loadBook() {
+  if (LOCAL) { try { const r = await fetch("/api/book?t=" + Date.now(), { cache: "no-store" }); if (r.ok) { S.data = normalise(await r.json()); return; } } catch (e) { } }
   // With a token we read through the API (always fresh); otherwise the Pages copy (fresh within ~1 min of a commit).
   if (S.token && apiBase()) {
     try {
@@ -282,10 +284,16 @@ function bookSummary() {
   return { open: open.length, closed: closed.length, cost, mv, unreal, real, irr, priced, wins: closed.filter(r => r.m.pnl > 0).length };
 }
 function valuationFor(tk) { return S.data.valuations[tk] || null; }
-function buyBelow(v) { if (!v || num(v.base) === null) return null; return v.base * (1 - (num(v.mos) ?? 0.3)); }
 
 /* ---------- persistence (commits) ---------- */
 async function commitBook(mutate, message) {
+  if (LOCAL) {
+    const cur = await fetch("/api/book?t=" + Date.now(), { cache: "no-store" }).then(r => r.ok ? r.json() : emptyBook()).catch(() => emptyBook());
+    const data = normalise(cur); if (mutate(data) === false) return false; data.updated = new Date().toISOString();
+    const r = await fetch("/api/save", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).catch(() => null);
+    if (r && r.ok) { S.data = data; toast("Saved locally — " + message); render(); refreshPrices(); return true; }
+    toast("Local save failed — is serve_local.py running?", true); return false;
+  }
   if (!S.token) { openUnlock(() => commitBook(mutate, message)); return false; }
   if (!apiBase()) { toast("No repository configured; cannot save.", true); return false; }
   for (let attempt = 0; attempt < 2; attempt++) {
@@ -441,28 +449,36 @@ function setValuationForm(tk) {
   const v = valuationFor(tk) || {};
   openModal(`<h3>Intrinsic value for ${esc(tk)}</h3><p>Per-share values. The owner-earnings pipeline overwrites these on the next sync unless <em>source</em> is left as manual.</p><form id="f">
     <div class="row"><label class="f grow">Bear<input name="bear" type="number" step="any" value="${v.bear ?? ""}"></label><label class="f grow">Base<input name="base" type="number" step="any" value="${v.base ?? ""}" required></label><label class="f grow">Bull<input name="bull" type="number" step="any" value="${v.bull ?? ""}"></label></div>
-    <div class="row" style="margin-top:8px"><label class="f grow">Margin of safety<input name="mos" type="number" step="0.01" min="0" max="0.9" value="${v.mos ?? 0.3}"></label><label class="f grow">As of<input name="asof" type="date" value="${v.asof || todayISO()}"></label></div>
-    <label class="f" style="margin-top:8px">Basis / note<input name="note" value="${esc(v.note || "")}" placeholder="e.g. 10% required return, anchor OE $879m"></label>
+    <label class="f" style="margin-top:8px">As of<input name="asof" type="date" value="${v.asof || todayISO()}"></label>
+    <label class="f" style="margin-top:8px">Basis / note<input name="note" value="${esc(v.note || "")}" placeholder="optional"></label>
     <div class="row" style="margin-top:12px;justify-content:flex-end"><button type="button" onclick="closeModal()">Cancel</button><button class="primary" type="submit">Save</button></div></form>`,
     m => m.querySelector("#f").addEventListener("submit", e => {
       e.preventDefault(); const fd = Object.fromEntries(new FormData(e.target).entries()); closeModal();
-      commitBook(d => { d.valuations[tk] = { ...(d.valuations[tk] || {}), bear: num(fd.bear), base: num(fd.base), bull: num(fd.bull), mos: num(fd.mos) ?? 0.3, asof: fd.asof, note: fd.note.trim(), source: "manual", updated: new Date().toISOString() }; }, `${tk}: intrinsic value`);
+      commitBook(d => { d.valuations[tk] = { ...(d.valuations[tk] || {}), bear: num(fd.bear), base: num(fd.base), bull: num(fd.bull), asof: fd.asof, note: fd.note.trim(), source: "manual", updated: new Date().toISOString() }; }, `${tk}: intrinsic value`);
     }));
 }
 async function quoteOne(sym) {
   try { const j = await (await fetch("https://quote.cnbc.com/quote-html-webservice/restQuote/symbolType/symbol?symbols=" + encodeURIComponent(sym) + "&requestMethod=itv&noform=1&partnerId=2&fund=1&exthrs=1&output=json", { cache: "no-store" })).json();
-    const q = j.FormattedQuoteResult?.FormattedQuote?.[0]; if (q && q.code === 0) return { price: num(String(q.last).replace(/,/g, "")), name: q.name }; } catch (e) { }
+    const q = j.FormattedQuoteResult?.FormattedQuote?.[0]; if (q && q.code === 0) return { price: num(String(q.last).replace(/,/g, "")), name: q.name, prev: num(String(q.previous_day_closing || "").replace(/,/g, "")), ccy: q.currencyCode, asof: q.last_time, mkt: q.curmktstatus }; } catch (e) { }
   return null;
 }
 
 /* ---------- rendering ---------- */
-function render() { const app = $("#app"); const r = parseRoute(); S.route = r; app.innerHTML = header() + (r.view === "ticker" ? tickerView(r.tk) : r.view === "setup" ? setupView() : homeView()) + footer(); wireAfterRender(); renderModal(); }
+function render() { const app = $("#app"); const r = parseRoute(); S.route = r; app.innerHTML = header() + (r.view === "ticker" ? tickerView(r.tk) : r.view === "setup" ? setupView() : homeView()) + footer(); wireAfterRender(); renderModal(); if (r.view === "ticker") ensureQuote(r.tk); }
+// A ticker page for a name that is not on a trade or the watchlist still needs a price.
+async function ensureQuote(tk) {
+  if (S.prices[tk] && S.prices[tk].price !== null) return;
+  if (S._q === tk) return; S._q = tk;
+  const q = await quoteOne(tk);
+  if (q && q.price !== null) { S.prices[tk] = { ...q, src: "live", asof: new Date().toISOString() }; if (S.route?.tk === tk) render(); }
+  S._q = null;
+}
 function parseRoute() { const h = location.hash.replace(/^#\/?/, ""); if (h.startsWith("t/")) return { view: "ticker", tk: decodeURIComponent(h.slice(2)).toUpperCase() }; if (h === "setup") return { view: "setup" }; return { view: "home" }; }
 function header() {
   return `<header class="top"><div class="brand"><h1><a href="#/" style="color:inherit">Serene Paper Book</a></h1><small>paper trades · watchlist · intrinsic value</small></div>
   <div class="toolbar"><span class="status" id="status"></span>
   <button id="refresh" class="primary" ${S.refreshing ? "disabled" : ""}>${S.refreshing ? "Refreshing…" : "↻ Refresh prices"}</button>
-  ${S.token ? `<button onclick="addTradeForm()">+ Trade</button><button onclick="addWatchForm()">+ Watch</button><button class="ghost" onclick="lock()" title="Lock editing">🔓 Lock</button>` : `<button class="ghost" onclick="openUnlock()">🔒 Unlock editing</button>`}
+  ${S.token ? `<button onclick="addTradeForm()">+ Trade</button><button onclick="addWatchForm()">+ Watch</button>${LOCAL ? '<span class="pill acc" title="served by serve_local.py — edits write to data/portfolio.json">local edit mode</span>' : `<button class="ghost" onclick="lock()" title="Lock editing">🔓 Lock</button>`}` : `<button class="ghost" onclick="openUnlock()">🔒 Unlock editing</button>`}
   <button class="ghost" id="theme" title="Toggle theme">◐</button></div></header>`;
 }
 function renderStatus() { const s = $("#status"); if (!s) return; s.innerHTML = statusText(); const b = $("#refresh"); if (b) { b.disabled = S.refreshing; b.textContent = S.refreshing ? "Refreshing…" : "↻ Refresh prices"; } }
@@ -486,15 +502,15 @@ function homeView() {
     <div class="tile"><div class="k">Book IRR</div><div class="v ${cls(sm.irr)}">${fmtP(sm.irr)}</div><div class="s">money-weighted, all trades</div></div></div>`;
   const openRows = S.data.trades.filter(t => !t.exit_date).map(t => { const m = tradeMetrics(t); const v = valuationFor(t.ticker); return { t, ...m, ticker: t.ticker, entry: num(t.entry_price), entry_date: t.entry_date, base: v ? num(v.base) : null, up: v && m.p ? v.base / m.p - 1 : null }; });
   const closedRows = S.data.trades.filter(t => t.exit_date).map(t => { const m = tradeMetrics(t); return { t, ...m, ticker: t.ticker, entry: num(t.entry_price), entry_date: t.entry_date, exit_date: t.exit_date, exit: num(t.exit_price) }; });
-  const watchRows = S.data.watchlist.map(w => { const p = px(w.ticker), v = valuationFor(w.ticker), bb = buyBelow(v); const base = v ? num(v.base) : null; return { w, ticker: w.ticker, added: w.added, at: num(w.price_at_add), p, since: p !== null && num(w.price_at_add) ? p / w.price_at_add - 1 : null, base, bb, disc: p !== null && base ? p / base - 1 : null, vsbb: p !== null && bb ? p / bb - 1 : null, target: num(w.target_price), vstarget: p !== null && num(w.target_price) ? p / w.target_price - 1 : null }; });
+  const watchRows = S.data.watchlist.map(w => { const p = px(w.ticker), v = valuationFor(w.ticker); const base = v ? num(v.base) : null; return { w, ticker: w.ticker, added: w.added, at: num(w.price_at_add), p, since: p !== null && num(w.price_at_add) ? p / w.price_at_add - 1 : null, base, up: p !== null && base ? base / p - 1 : null, target: num(w.target_price), vstarget: p !== null && num(w.target_price) ? p / w.target_price - 1 : null }; });
   const [ok, od] = S.sort.open, [ck, cd] = S.sort.closed, [wk, wd] = S.sort.watch;
   const ed = !!S.token;
   const openT = openRows.length ? `<div class="tbl"><table><thead><tr><th class="l">#</th>${th("open", "ticker", "Ticker", "l")}${th("open", "entry_date", "Entered", "l")}<th>Side · qty</th>${th("open", "entry", "Entry")}${th("open", "p", "Price")}${th("open", "ret", "Return")}${th("open", "irr", "IRR p.a.")}${th("open", "pnl", "P&amp;L")}${th("open", "days", "Days")}${th("open", "base", "Intrinsic")}${th("open", "up", "Upside")}${ed ? "<th></th>" : ""}</tr></thead><tbody>` +
     sortRows(openRows, ok, od).map((r, i) => `<tr><td class="rank">${i + 1}</td><td class="tk l"><a href="#/t/${r.ticker}">${r.ticker}</a></td><td class="l">${r.entry_date}</td><td><span class="pill ${r.t.side === "SHORT" ? "warn" : ""}">${r.t.side}</span> ${fmtN(r.t.qty, 0)}</td><td>${fmtN(r.entry)}</td><td>${priceCell(r.ticker)}</td><td class="${cls(r.ret)}">${fmtP(r.ret)}</td><td class="${cls(r.irr)}" title="${r.days < 30 ? "annualised from under 30 days — treat with caution" : ""}">${fmtP(r.irr)}${r.days < 30 && r.irr !== null ? "<sup>†</sup>" : ""}</td><td class="${cls(r.pnl)}">${fmtMoney(r.pnl)}</td><td>${r.days}</td><td>${r.base !== null ? fmtN(r.base) : '<span class="muted">—</span>'}</td><td class="${cls(r.up)}">${fmtP(r.up)}</td>${ed ? `<td class="nowrap"><button class="small" onclick="exitTradeForm('${r.t.id}')">Exit</button> <button class="small ghost" onclick="deleteTrade('${r.t.id}')" title="delete">✕</button></td>` : ""}</tr>`).join("") + `</tbody></table></div><div class="hint" style="padding:8px 16px">† annualised from a holding period under 30 days. Intrinsic = base-case owner-earnings value per share; upside = intrinsic ÷ price − 1.</div>` : `<div class="empty">No open positions. ${ed ? 'Use <b>+ Trade</b> to enter one.' : 'Unlock editing to enter one.'}</div>`;
   const closedT = closedRows.length ? `<div class="tbl"><table><thead><tr><th class="l">#</th>${th("closed", "ticker", "Ticker", "l")}${th("closed", "entry_date", "Entered", "l")}${th("closed", "exit_date", "Exited", "l")}<th>Side · qty</th>${th("closed", "entry", "Entry")}${th("closed", "exit", "Exit")}${th("closed", "ret", "Return")}${th("closed", "irr", "IRR p.a.")}${th("closed", "pnl", "P&amp;L")}${th("closed", "days", "Days")}${ed ? "<th></th>" : ""}</tr></thead><tbody>` +
     sortRows(closedRows, ck, cd).map((r, i) => `<tr><td class="rank">${i + 1}</td><td class="tk l"><a href="#/t/${r.ticker}">${r.ticker}</a></td><td class="l">${r.entry_date}</td><td class="l">${r.exit_date}</td><td><span class="pill ${r.t.side === "SHORT" ? "warn" : ""}">${r.t.side}</span> ${fmtN(r.t.qty, 0)}</td><td>${fmtN(r.entry)}</td><td>${fmtN(r.exit)}</td><td class="${cls(r.ret)}">${fmtP(r.ret)}</td><td class="${cls(r.irr)}">${fmtP(r.irr)}${r.days < 30 && r.irr !== null ? "<sup>†</sup>" : ""}</td><td class="${cls(r.pnl)}">${fmtMoney(r.pnl)}</td><td>${r.days}</td>${ed ? `<td class="nowrap"><button class="small ghost" onclick="reopenTrade('${r.t.id}')">Reopen</button> <button class="small ghost" onclick="deleteTrade('${r.t.id}')">✕</button></td>` : ""}</tr>`).join("") + `</tbody></table></div>` : `<div class="empty">Nothing closed yet.</div>`;
-  const watchT = watchRows.length ? `<div class="tbl"><table><thead><tr><th class="l">#</th>${th("watch", "ticker", "Ticker", "l")}${th("watch", "added", "Added", "l")}${th("watch", "at", "Price then")}${th("watch", "p", "Price now")}${th("watch", "since", "Since added")}${th("watch", "base", "Intrinsic")}${th("watch", "disc", "Price vs intrinsic")}${th("watch", "bb", "Buy below")}${th("watch", "vsbb", "vs buy-below")}${th("watch", "target", "Target")}${th("watch", "vstarget", "vs target")}${ed ? "<th></th>" : ""}</tr></thead><tbody>` +
-    sortRows(watchRows, wk, wd).map((r, i) => `<tr><td class="rank">${i + 1}</td><td class="tk l"><a href="#/t/${r.ticker}">${r.ticker}</a>${r.w.qty ? ` <span class="muted">×${fmtN(r.w.qty, 0)}</span>` : ""}</td><td class="l">${r.added}</td><td>${fmtN(r.at)}</td><td>${priceCell(r.ticker)}</td><td class="${cls(r.since)}">${fmtP(r.since)}</td><td>${r.base !== null ? fmtN(r.base) : '<span class="muted">—</span>'}</td><td class="${r.disc === null ? "muted" : r.disc < 0 ? "pos" : "neg"}">${fmtP(r.disc)}</td><td>${r.bb !== null ? fmtN(r.bb) : '<span class="muted">—</span>'}</td><td>${r.vsbb === null ? '<span class="muted">—</span>' : r.vsbb <= 0 ? '<span class="pill good">in the buy zone ' + fmtP(r.vsbb) + '</span>' : fmtP(r.vsbb) + ' above'}</td><td>${fmtN(r.target)}</td><td class="${r.vstarget === null ? "muted" : r.vstarget <= 0 ? "pos" : ""}">${r.vstarget === null ? "—" : r.vstarget <= 0 ? "at / below target" : fmtP(r.vstarget) + " above"}</td>${ed ? `<td class="nowrap"><button class="small" onclick="promoteWatch('${r.w.id}')">Enter</button> <button class="small ghost" onclick="removeWatch('${r.w.id}')">✕</button></td>` : ""}</tr>`).join("") + `</tbody></table></div><div class="hint" style="padding:8px 16px">Ranked most undervalued first: price vs intrinsic below zero means the quote sits under the base-case value. Buy-below applies the margin of safety.</div>` : `<div class="empty">Watchlist is empty. ${ed ? 'Use <b>+ Watch</b> to add a name.' : ''}</div>`;
+  const watchT = watchRows.length ? `<div class="tbl"><table><thead><tr><th class="l">#</th>${th("watch", "ticker", "Ticker", "l")}${th("watch", "added", "Added", "l")}${th("watch", "at", "Price then")}${th("watch", "p", "Price now")}${th("watch", "since", "Since added")}${th("watch", "base", "Intrinsic")}${th("watch", "up", "Upside")}${th("watch", "target", "Target")}${th("watch", "vstarget", "vs target")}${ed ? "<th></th>" : ""}</tr></thead><tbody>` +
+    sortRows(watchRows, wk, wd).map((r, i) => `<tr><td class="rank">${i + 1}</td><td class="tk l"><a href="#/t/${r.ticker}">${r.ticker}</a>${r.w.qty ? ` <span class="muted">×${fmtN(r.w.qty, 0)}</span>` : ""}</td><td class="l">${r.added}</td><td>${fmtN(r.at)}</td><td>${priceCell(r.ticker)}</td><td class="${cls(r.since)}">${fmtP(r.since)}</td><td>${r.base !== null ? fmtN(r.base) : '<span class="muted">—</span>'}</td><td class="${cls(r.up)}">${fmtP(r.up)}</td><td>${fmtN(r.target)}</td><td class="${r.vstarget === null ? "muted" : r.vstarget <= 0 ? "pos" : ""}">${r.vstarget === null ? "—" : r.vstarget <= 0 ? "at / below target" : fmtP(r.vstarget) + " above"}</td>${ed ? `<td class="nowrap"><button class="small" onclick="promoteWatch('${r.w.id}')">Enter</button> <button class="small ghost" onclick="removeWatch('${r.w.id}')">✕</button></td>` : ""}</tr>`).join("") + `</tbody></table></div><div class="hint" style="padding:8px 16px">Ranked by upside to the base-case intrinsic value, largest first.</div>` : `<div class="empty">Watchlist is empty. ${ed ? 'Use <b>+ Watch</b> to add a name.' : ''}</div>`;
   return tiles +
     `<div class="card"><div class="hd"><h2>Open positions</h2><span class="sub">ranked best to worst by return to date · click a column to re-rank</span></div>${openT}</div>` +
     `<div class="card"><div class="hd"><h2>Watchlist</h2><span class="sub">names waiting for a price</span></div>${watchT}</div>` +
@@ -502,8 +518,8 @@ function homeView() {
 }
 
 function valBar(v, p) {
-  const bear = num(v.bear), base = num(v.base), bull = num(v.bull), bb = buyBelow(v);
-  const pts = [bear, base, bull, bb, p].filter(x => x !== null && x > 0);
+  const bear = num(v.bear), base = num(v.base), bull = num(v.bull);
+  const pts = [bear, base, bull, p].filter(x => x !== null && x > 0);
   if (!pts.length) return "";
   const lo = Math.min(...pts) * 0.85, hi = Math.max(...pts) * 1.1, W = 560, H = 78, L = 10, R = 10, x = val => L + (val - lo) / (hi - lo) * (W - L - R);
   let s = `<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" style="display:block;overflow:visible" font-family="IBM Plex Sans, sans-serif" font-size="11">`;
@@ -512,7 +528,6 @@ function valBar(v, p) {
   if (bear !== null) s += `<text x="${x(bear)}" y="64" text-anchor="middle" fill="var(--ink3)">bear ${fmtN(bear)}</text>`;
   if (bull !== null) s += `<text x="${x(bull)}" y="64" text-anchor="middle" fill="var(--ink3)">bull ${fmtN(bull)}</text>`;
   if (base !== null) s += `<circle cx="${x(base)}" cy="40" r="6" fill="var(--accent)"/><text x="${x(base)}" y="22" text-anchor="middle" fill="var(--accent)" font-weight="600">base ${fmtN(base)}</text>`;
-  if (bb !== null) s += `<line x1="${x(bb)}" x2="${x(bb)}" y1="26" y2="54" stroke="var(--accent)" stroke-dasharray="3 3"/><text x="${x(bb)}" y="76" text-anchor="middle" fill="var(--accent)">buy below ${fmtN(bb)}</text>`;
   if (p !== null) s += `<line x1="${x(p)}" x2="${x(p)}" y1="24" y2="56" stroke="var(--bad)" stroke-width="2"/><text x="${x(p)}" y="14" text-anchor="middle" fill="var(--bad)" font-weight="600">price ${fmtN(p)}</text>`;
   return s + `</svg>`;
 }
@@ -522,27 +537,16 @@ function tickerView(tk) {
   const v = valuationFor(tk), th = S.data.theses[tk], q = S.prices[tk], p = px(tk);
   const name = q?.name || v?.name || "";
   const ed = !!S.token;
-  const bb = buyBelow(v);
   const openPos = trades.filter(t => !t.exit_date);
   let valCard;
   if (v) {
-    valCard = `<div class="card"><div class="hd"><h2>Intrinsic value</h2><span class="sub">${v.source === "oe.db" ? "owner-earnings pipeline" : esc(v.source || "manual")} · as of ${esc(v.asof || "?")}</span></div><div class="bd">
-      <div class="row" style="align-items:baseline;gap:18px"><div><div class="hint">base value / share</div><div class="big">${fmtN(v.base)}</div></div>
-      <div><div class="hint">buy below (MOS ${fmtN((num(v.mos) ?? 0.3) * 100, 0)}%)</div><div class="big" style="color:var(--accent)">${fmtN(bb)}</div></div>
+    valCard = `<div class="card"><div class="hd"><h2>Intrinsic value</h2><span class="sub">as of ${esc(v.asof || "?")}</span></div><div class="bd">
+      <div class="row" style="align-items:baseline;gap:28px"><div><div class="hint">base value / share</div><div class="big">${fmtN(v.base)}</div></div>
       <div><div class="hint">upside to base</div><div class="big ${p && v.base ? cls(v.base / p - 1) : "muted"}">${p && v.base ? fmtP(v.base / p - 1) : "—"}</div></div>
-      <div><div class="hint">price vs buy-below</div><div class="big">${p && bb ? (p <= bb ? '<span class="pill good">in the buy zone</span>' : fmtP(p / bb - 1) + " above") : "—"}</div></div></div>
+      <div><div class="hint">bear / base / bull</div><div class="big" style="font-size:22px">${fmtN(v.bear)} / ${fmtN(v.base)} / ${fmtN(v.bull)}</div></div></div>
       <div class="valbar">${valBar(v, p)}</div>
-      <div class="kv" style="margin-top:12px">
-        ${v.anchor_oe !== undefined && v.anchor_oe !== null ? `<span class="k">Anchor owner earnings</span><span class="v">$${fmtN(v.anchor_oe, 0)}m${v.latest_fy ? " (" + esc(String(v.latest_fy).replace(/^FY/i, "FY")) + " basis)" : ""}</span>` : ""}
-        ${v.g_base !== undefined && v.g_base !== null ? `<span class="k">Growth (bear / base / bull)</span><span class="v">${fmtP(v.g_bear, 1)} / ${fmtP(v.g_base, 1)} / ${fmtP(v.g_bull, 1)}</span>` : ""}
-        ${v.shares ? `<span class="k">Diluted shares</span><span class="v">${fmtN(v.shares, 1)}m</span>` : ""}
-        ${v.net_debt !== undefined && v.net_debt !== null ? `<span class="k">Net debt (cash negative)</span><span class="v">$${fmtN(v.net_debt, 0)}m</span>` : ""}
-        ${v.gate ? `<span class="k">Pipeline gate</span><span class="v"><span class="pill ${v.gate === "OK" ? "good" : "bad"}">${esc(v.gate)}</span>${/TOO_HARD/.test(v.gate_reason || "") ? ' <span class="pill warn">TOO_HARD flagged — indicative</span>' : ""}${v.gate_reason ? `<details style="margin-top:4px"><summary class="hint" style="cursor:pointer">judge's reasoning</summary><div class="hint" style="white-space:normal;max-width:60ch;margin-top:4px">${esc(v.gate_reason)}</div></details>` : ""}</span>` : ""}
-        ${v.profile ? `<span class="k">Quality profile</span><span class="v">${esc(v.profile)}</span>` : ""}
-        ${v.note ? `<span class="k">Basis</span><span class="v">${esc(v.note)}</span>` : ""}
-        <span class="k">Required return</span><span class="v">${v.source === "oe.db" ? "10% (house rule, never the risk-free rate)" : "—"}</span>
-      </div>
-      <div class="row" style="margin-top:12px">${v.source === "oe.db" ? `<a class="btn" href="${OE_BOARD}#/${tk}" target="_blank" rel="noopener">Open the full owner-earnings trace ↗</a>` : ""}${ed ? `<button class="small" onclick="setValuationForm('${tk}')">Edit values</button>` : ""}</div>
+      ${v.note ? `<div class="hint" style="margin-top:6px">${esc(v.note)}</div>` : ""}
+      ${ed ? `<div class="row" style="margin-top:12px"><button class="small" onclick="setValuationForm('${tk}')">Edit values</button></div>` : ""}
     </div></div>`;
   } else {
     valCard = `<div class="card"><div class="hd"><h2>Intrinsic value</h2></div><div class="bd"><div class="empty" style="padding:12px">No valuation on file for ${esc(tk)}. Run the owner-earnings pipeline (<code>do ${esc(tk)}</code>) and sync, ${ed ? `or <a href="#" onclick="setValuationForm('${tk}');return false">enter one by hand</a>.` : "or unlock editing to enter one by hand."}</div></div></div>`;
@@ -593,7 +597,7 @@ function footer() { return `<div class="foot">Database of record: <code>data/por
 function wireAfterRender() {
   const b = $("#refresh"); if (b) b.onclick = () => refreshPrices();
   const t = $("#theme"); if (t) t.onclick = () => { const cur = document.documentElement.getAttribute("data-theme"); const nxt = cur === "dark" ? "light" : cur === "light" ? "" : (matchMedia("(prefers-color-scheme:dark)").matches ? "light" : "dark"); if (nxt) document.documentElement.setAttribute("data-theme", nxt); else document.documentElement.removeAttribute("data-theme"); try { localStorage.setItem("pb_theme", nxt); } catch (e) { } };
-  document.querySelectorAll("th[data-sort]").forEach(h => h.onclick = () => { const [tbl, key] = h.dataset.sort.split(":"); const [k, d] = S.sort[tbl]; S.sort[tbl] = [key, k === key ? -d : (key === "ticker" || key === "entry_date" || key === "added" || key === "disc" || key === "vsbb" ? 1 : -1)]; render(); });
+  document.querySelectorAll("th[data-sort]").forEach(h => h.onclick = () => { const [tbl, key] = h.dataset.sort.split(":"); const [k, d] = S.sort[tbl]; S.sort[tbl] = [key, k === key ? -d : (key === "ticker" || key === "entry_date" || key === "added" ? 1 : -1)]; render(); });
   const ta = $("#thesis-ta"); if (ta) ta.addEventListener("input", () => { const tk = S.route.tk; S.drafts[tk] = ta.value; try { localStorage.setItem("pb_draft_" + tk, ta.value); } catch (e) { } const h = $("#draft-hint"); if (h) h.textContent = "draft kept in this browser until saved"; });
   const sf = $("#f"); if (sf && S.route.view === "setup") sf.addEventListener("submit", e => { e.preventDefault(); doSetup(sf); });
   renderStatus();
@@ -603,6 +607,7 @@ function wireAfterRender() {
 (async function () {
   try { const th = localStorage.getItem("pb_theme"); if (th) document.documentElement.setAttribute("data-theme", th); } catch (e) { }
   try { S.token = sessionStorage.getItem("pb_token") || null; } catch (e) { }
+  if (LOCAL) S.token = "local";
   await Promise.all([loadVault(), loadSnapshot()]);
   await loadBook();
   render();

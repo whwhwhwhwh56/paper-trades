@@ -15,7 +15,8 @@ editing needs the PIN.
 | `data/vault.json` | The editing token, encrypted with the PIN (PBKDF2 + AES-GCM in the browser). Created once from the `#/setup` page. |
 | `refresh_prices.py` | Writes `data/prices.json`. Massive first, Yahoo as fallback. |
 | `.github/workflows/prices.yml` | Runs `refresh_prices.py` every 20 minutes in US hours, and on demand. |
-| `tools/sync_oe.py` | Copies bear/base/bull values, margin of safety, anchor owner earnings and gate status from `../oe-db/oe.db` into the book. `--push` commits and pushes. |
+| `tools/sync_oe.py` | Copies the bear/base/bull values per share from `../oe-db/oe.db` into the book. `--push` commits and pushes. |
+| `serve_local.py` / `open_book.bat` | Local preview with editing on and no PIN; edits write to `data/portfolio.json`. |
 
 ## Prices
 
@@ -33,7 +34,7 @@ Massive cannot price it, a `yahoo_symbol` (`NESN.SW`).
 * **Return to date** = price ÷ entry − 1 (sign flipped for shorts). Closed trades use the exit price.
 * **IRR p.a.** = (1 + return)^(365 ÷ days held) − 1. A dagger marks holding periods under 30 days, where annualising is not meaningful.
 * **Book IRR** is the money-weighted return over every trade's cash flows, with open positions marked at the latest price today.
-* **Intrinsic** is the base-case owner-earnings value per share; **buy below** applies the margin of safety (0.30 unless the pipeline says otherwise).
+* **Intrinsic** is the base-case owner-earnings value per share; **upside** = intrinsic ÷ price − 1. The ticker page shows the bear / base / bull range only; the pipeline's workings stay private.
 
 ## Editing
 

@@ -1,8 +1,84 @@
 {
   "version": 1,
-  "updated": null,
-  "trades": [],
-  "watchlist": [],
-  "theses": {},
-  "valuations": {}
+  "updated": "2026-09-03T02:53:07.055Z",
+  "trades": [
+    {
+      "id": "T-0001",
+      "ticker": "ADBE",
+      "side": "LONG",
+      "qty": 1,
+      "entry_date": "2026-08-19",
+      "entry_price": 272.73,
+      "exit_date": null,
+      "exit_price": null,
+      "quote_symbol": null,
+      "notes": "",
+      "created": "2026-09-03T02:40:40.911Z"
+    }
+  ],
+  "watchlist": [
+    {
+      "id": "W-0001",
+      "ticker": "DECK",
+      "added": "2026-09-03",
+      "price_at_add": 83.76,
+      "target_price": null,
+      "qty": null,
+      "quote_symbol": null,
+      "notes": "1. Need more research on the competitive moat - is the selldown industry wide and non-discriminate?",
+      "created": "2026-09-03T02:51:09.463Z"
+    }
+  ],
+  "theses": {
+    "APTV": {
+      "text": "Sample thesis. Replace with your own.",
+      "updated": "2026-09-01T00:00:00Z"
+    },
+    "ADBE": {
+      "text": "1. GenAI is not going to replace ADBE. Labs are deprioritizing image and video genAI due to high compute requirements - if we are truly compute constrained then tokens will be allocated to the highest ROI use case which is language token which can do productive work.\n2. Will still be cheaper to do via conventional tools that ADBE offer. If Canva and Figma can truly disrupt ADBE, it would've done so long ago but company's Owners' Earnings has been growing steadily over past decade i.e. true franchise that will be hard to disrupt\n3. Cash cow - high share repurchase. Trading at 10x Owners' Earnings. Low capital requirements mean it will do well in inflationary environment and high cash flow will make it a good candidate in high yield environment",
+      "updated": "2026-09-03T02:50:13.587Z"
+    },
+    "DECK": {
+      "text": "1. OE has been increasing very steadily throughout the years, trading at meaningful discount (>30%) to IV.\n2. Need to find out if the fears are warranted or if the uncertainty is what is fueling this sell-off (look at Dexter Shoes)\n",
+      "updated": "2026-09-03T02:52:29.504Z"
+    }
+  },
+  "valuations": {
+    "ADBE": {
+      "source": "oe.db",
+      "name": "ADOBE INC.",
+      "asof": "2026-09-02",
+      "bear": 185.68,
+      "base": 288.7,
+      "bull": 340.03,
+      "synced": "2026-09-03T02:45:03+00:00"
+    },
+    "APTV": {
+      "source": "oe.db",
+      "name": "Aptiv PLC",
+      "asof": "2026-09-02",
+      "bear": 29.95,
+      "base": 40.96,
+      "bull": 47.41,
+      "synced": "2026-09-03T02:45:03+00:00"
+    },
+    "BKNG": {
+      "source": "oe.db",
+      "name": "Booking Holdings Inc.",
+      "asof": "2026-09-02",
+      "bear": 51.8,
+      "base": 73.07,
+      "bull": 81.81,
+      "synced": "2026-09-03T02:45:03+00:00"
+    },
+    "DECK": {
+      "bear": 95,
+      "base": 127,
+      "bull": 141,
+      "asof": "2026-09-03",
+      "note": "",
+      "source": "manual",
+      "updated": "2026-09-03T02:53:07.055Z"
+    }
+  }
 }
