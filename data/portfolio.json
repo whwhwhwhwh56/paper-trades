@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated": "2026-09-03T02:53:07.055Z",
+  "updated": "2026-09-03T08:14:06.715Z",
   "trades": [
     {
       "id": "T-0001",
@@ -16,20 +16,25 @@
       "created": "2026-09-03T02:40:40.911Z"
     }
   ],
-  "watchlist": [
+  "watchlist": [],
+  "too_hard": [
     {
-      "id": "W-0001",
+      "id": "H-0001",
       "ticker": "DECK",
       "added": "2026-09-03",
       "price_at_add": 83.76,
-      "target_price": null,
-      "qty": null,
       "quote_symbol": null,
-      "notes": "1. Need more research on the competitive moat - is the selldown industry wide and non-discriminate?",
-      "created": "2026-09-03T02:51:09.463Z"
+      "reason": "1. Need more research on the competitive moat - is the selldown industry wide and non-discriminate?",
+      "from_watch": {
+        "id": "W-0001",
+        "added": "2026-09-03",
+        "price_at_add": 83.76,
+        "target_price": null,
+        "notes": "1. Need more research on the competitive moat - is the selldown industry wide and non-discriminate?"
+      },
+      "created": "2026-09-03T08:14:06.011Z"
     }
   ],
-  "too_hard": [],
   "theses": {
     "APTV": {
       "text": "Sample thesis. Replace with your own.",
