@@ -3,10 +3,12 @@ name: Refresh price snapshot
 on:
   workflow_dispatch:
   schedule:
-    # Every 20 minutes during US regular hours (13:30–20:00 UTC, Mon–Fri) plus one
-    # post-close run. GitHub cron is UTC and may lag a few minutes.
-    - cron: "*/20 13-20 * * 1-5"
-    - cron: "15 21 * * 1-5"
+    # Once per weekday just after the 4:00 pm ET close. GitHub cron is UTC with no
+    # daylight-saving awareness, so two entries cover both offsets: 20:10 UTC is
+    # 4:10 pm EDT (summer) and 21:10 UTC is 4:10 pm EST (winter). The off-season
+    # entry simply re-snapshots the same close an hour later.
+    - cron: "10 20 * * 1-5"
+    - cron: "10 21 * * 1-5"
 
 permissions:
   contents: write

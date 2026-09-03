@@ -210,12 +210,12 @@ async function refreshPrices() {
     else if (!S.prices[tk]) S.prices[tk] = { price: null, src: "none" };
   }
   S.refreshedAt = new Date(); S.refreshing = false; render();
-  if (S.token && apiBase() && syms.length) dispatchSnapshot();
 }
 const px = tk => S.prices[tk]?.price ?? null;
-/* Unlocked sessions also ask the repository workflow to re-price the book through
-   Massive (the key lives in a repository secret, never in this page); the result
-   lands in data/prices.json about a minute later and replaces any older quote. */
+/* Optional: ask the repository workflow to re-price the book through Massive now
+   (the key lives in a repository secret, never in this page). Not wired to the
+   refresh button — the workflow runs on its own at the 4 pm ET close; call
+   dispatchSnapshot() from the console if an off-schedule Massive snapshot is wanted. */
 async function dispatchSnapshot() {
   if (S.dispatching) return; S.dispatching = true;
   try {

@@ -14,17 +14,18 @@ editing needs the PIN.
 | `data/prices.json` | Price snapshot written by the scheduled workflow (Massive, key kept as a repo secret). The page falls back to it when a live quote is unavailable. |
 | `data/vault.json` | The editing token, encrypted with the PIN (PBKDF2 + AES-GCM in the browser). Created once from the `#/setup` page. |
 | `refresh_prices.py` | Writes `data/prices.json`. Massive first, Yahoo as fallback. |
-| `.github/workflows/prices.yml` | Runs `refresh_prices.py` every 20 minutes in US hours, and on demand. |
+| `.github/workflows/prices.yml` | Runs `refresh_prices.py` each weekday after the 4 pm ET close, and on demand. |
 | `tools/sync_oe.py` | Copies the bear/base/bull values per share from `../oe-db/oe.db` into the book. `--push` commits and pushes. |
 | `serve_local.py` / `open_book.bat` | Local preview with editing on and no PIN; edits write to `data/portfolio.json`. |
 
 ## Prices
 
 Clicking **Refresh prices** in the page asks CNBC's public quote service for every
-ticker on the book (regular-session last; keyless and cross-origin friendly). If the
-viewer has unlocked editing, the same click also dispatches the snapshot workflow,
-which prices the book through Massive and commits `data/prices.json`. A ticker CNBC
-cannot price shows the workflow snapshot instead, marked with a small `s`.
+ticker on the book (regular-session last; keyless and cross-origin friendly). The
+Massive workflow runs once per weekday just after the 4:00 pm ET close and commits
+the closing prices to `data/prices.json`; it can also be started by hand from the
+Actions tab. A ticker CNBC cannot price shows that snapshot instead, marked with a
+small `s`.
 
 Non-US listings: give the row a `quote_symbol` in CNBC form (`NESN-CH`) and, if
 Massive cannot price it, a `yahoo_symbol` (`NESN.SW`).
