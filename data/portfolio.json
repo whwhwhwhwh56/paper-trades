@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated": "2026-09-07T03:06:39.822Z",
+  "updated": "2026-09-07T03:06:52.859Z",
   "trades": [
     {
       "id": "T-0001",
@@ -45,22 +45,6 @@
         "notes": "1. Need more research on the competitive moat - is the selldown industry wide and non-discriminate?"
       },
       "created": "2026-09-03T08:14:06.011Z"
-    },
-    {
-      "id": "H-0002",
-      "ticker": "SHOE",
-      "added": "2026-09-07",
-      "price_at_add": 14.07,
-      "quote_symbol": null,
-      "reason": "",
-      "from_watch": {
-        "id": "W-0001",
-        "added": "2026-09-07",
-        "price_at_add": 14.07,
-        "target_price": null,
-        "notes": ""
-      },
-      "created": "2026-09-07T02:58:13.081Z"
     }
   ],
   "theses": {
