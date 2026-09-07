@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated": "2026-09-07T02:58:13.694Z",
+  "updated": "2026-09-07T03:06:39.822Z",
   "trades": [
     {
       "id": "T-0001",
@@ -16,7 +16,19 @@
       "created": "2026-09-03T02:40:40.911Z"
     }
   ],
-  "watchlist": [],
+  "watchlist": [
+    {
+      "id": "W-0001",
+      "ticker": "SHOE",
+      "added": "2026-09-07",
+      "price_at_add": 14.07,
+      "target_price": 11,
+      "qty": null,
+      "quote_symbol": null,
+      "notes": "",
+      "created": "2026-09-07T03:06:39.005Z"
+    }
+  ],
   "too_hard": [
     {
       "id": "H-0001",
