@@ -1,11 +1,11 @@
 {
- "asof": "2026-09-09T22:27:47+00:00",
+ "asof": "2026-09-09T23:10:06+00:00",
  "count": 2,
  "prices": {
   "ADBE": {
-   "asof": "2026-09-09T22:27:41+00:00",
+   "asof": "2026-09-09T23:10:06+00:00",
    "ccy": "USD",
-   "ext": 253.5,
+   "ext": 253.02,
    "mkt": "late_trading",
    "name": "Adobe Inc.",
    "prev": 257.26,
@@ -13,9 +13,9 @@
    "provider": "massive"
   },
   "SHOE": {
-   "asof": "2026-09-09T22:20:01+00:00",
+   "asof": "2026-09-09T23:04:01+00:00",
    "ccy": "USD",
-   "ext": 12.96,
+   "ext": 13.02,
    "mkt": "late_trading",
    "name": "Shoe Station Group, Inc. Common Stock",
    "prev": 13.38,
