@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated": "2026-09-10T06:11:30.144Z",
+  "updated": "2026-09-10T06:13:09.942Z",
   "trades": [
     {
       "id": "T-0001",
@@ -60,8 +60,8 @@
   ],
   "theses": {
     "APTV": {
-      "text": "Sample thesis. Replace with your own.",
-      "updated": "2026-09-01T00:00:00Z"
+      "text": "1. Intrinsic value should be closer to US$70/sh. \n2. Likely to do well if market shifts focus to Physcial AI since many of the parts that they are supplying to EV makers right now would be relevant for Physcial AI\n3. More capital-light post-spinoff; allow for higher capital return to shareholders should there be more favourable investment opportunities - at US$39/sh downside is likely limited",
+      "updated": "2026-09-10T06:13:09.942Z"
     },
     "ADBE": {
       "text": "1. GenAI is not going to replace ADBE. Labs are deprioritizing image and video genAI due to high compute requirements - if we are truly compute constrained then tokens will be allocated to the highest ROI use case which is language token which can do productive work.\n2. Will still be cheaper to do via conventional tools that ADBE offer. If Canva and Figma can truly disrupt ADBE, it would've done so long ago but company's Owners' Earnings has been growing steadily over past decade i.e. true franchise that will be hard to disrupt\n3. Cash cow - high share repurchase. Trading at 10x Owners' Earnings. Low capital requirements mean it will do well in inflationary environment and high cash flow will make it a good candidate in high yield environment",
