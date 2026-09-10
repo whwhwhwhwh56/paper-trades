@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated": "2026-09-07T03:08:12.867Z",
+  "updated": "2026-09-10T06:11:30.144Z",
   "trades": [
     {
       "id": "T-0001",
@@ -27,6 +27,17 @@
       "quote_symbol": null,
       "notes": "",
       "created": "2026-09-07T03:06:39.005Z"
+    },
+    {
+      "id": "W-0002",
+      "ticker": "APTV",
+      "added": "2026-09-10",
+      "price_at_add": 44.51,
+      "target_price": 39,
+      "qty": null,
+      "quote_symbol": null,
+      "notes": "1. Intrinsic Value likely to be closer to $70 without factoring in upside from potentail industry physical AI tailwinds. Thesis is that most of the parts that they are supplying to EV makers are similar to Physical AI and should do well should market focus on Physical AI",
+      "created": "2026-09-10T06:11:29.120Z"
     }
   ],
   "too_hard": [
