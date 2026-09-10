@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated": "2026-09-10T09:07:37.758Z",
+  "updated": "2026-09-10T09:07:44.441Z",
   "trades": [
     {
       "id": "T-0001",
@@ -90,7 +90,7 @@
     },
     "ARM": {
       "text": "1) Agentic Workflows will require significantly  more CPU. CPUs are increasingly run on ARM architecture (alternative being x86) due to higher efficiency \n2) Corroborated across earnings call by BABA and NVDA which see agentic workflow taking off - also evidenced by Meta's Muse agent and Grokbot, which run on their own VM ",
-      "updated": "2026-09-10T09:07:37.758Z"
+      "updated": "2026-09-10T09:07:44.441Z"
     }
   },
   "valuations": {
