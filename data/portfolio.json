@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated": "2026-09-10T09:36:07.636Z",
+  "updated": "2026-09-10T09:36:20.907Z",
   "trades": [
     {
       "id": "T-0001",
@@ -14,19 +14,6 @@
       "quote_symbol": null,
       "notes": "",
       "created": "2026-09-03T02:40:40.911Z"
-    },
-    {
-      "id": "T-0002",
-      "ticker": "ARM",
-      "side": "LONG",
-      "qty": 1,
-      "entry_date": "2026-09-10",
-      "entry_price": 264.23,
-      "exit_date": null,
-      "exit_price": null,
-      "quote_symbol": null,
-      "notes": "",
-      "created": "2026-09-10T09:05:35.846Z"
     }
   ],
   "watchlist": [
