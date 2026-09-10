@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated": "2026-09-10T09:05:36.552Z",
+  "updated": "2026-09-10T09:07:37.758Z",
   "trades": [
     {
       "id": "T-0001",
@@ -87,6 +87,10 @@
     "SHOE": {
       "text": "1. Market cap of US$380m, cash and cash equivalent of about US$135m. Essentially US$245m for their operating business \n2. Owners' earnings should be around US$30-40m for this coming year (~US$50m for the latest fiscal year). i.e. about 7x P/OE\n3. They are also planning to close around 18-24 stores over the next 2 years, which should release around 15-20m of working capital. If OE can sustain at around 30-40m with this minimised footprint, then P/OE should be around 4x if share price drops to $11 - reasonable entry \n",
       "updated": "2026-09-07T03:08:12.867Z"
+    },
+    "ARM": {
+      "text": "1) Agentic Workflows will require significantly  more CPU. CPUs are increasingly run on ARM architecture (alternative being x86) due to higher efficiency \n2) Corroborated across earnings call by BABA and NVDA which see agentic workflow taking off - also evidenced by Meta's Muse agent and Grokbot, which run on their own VM ",
+      "updated": "2026-09-10T09:07:37.758Z"
     }
   },
   "valuations": {
