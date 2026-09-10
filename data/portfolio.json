@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated": "2026-09-10T09:07:44.441Z",
+  "updated": "2026-09-10T09:36:07.636Z",
   "trades": [
     {
       "id": "T-0001",
@@ -51,6 +51,17 @@
       "quote_symbol": null,
       "notes": "1. Intrinsic Value likely to be closer to $70 without factoring in upside from potentail industry physical AI tailwinds. Thesis is that most of the parts that they are supplying to EV makers are similar to Physical AI and should do well should market focus on Physical AI",
       "created": "2026-09-10T06:11:29.120Z"
+    },
+    {
+      "id": "W-0003",
+      "ticker": "ARM",
+      "added": "2026-09-10",
+      "price_at_add": null,
+      "target_price": null,
+      "qty": null,
+      "quote_symbol": null,
+      "notes": "",
+      "created": "2026-09-10T09:36:07.245Z"
     }
   ],
   "too_hard": [
