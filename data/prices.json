@@ -1,11 +1,11 @@
 {
- "asof": "2026-09-11T22:28:53+00:00",
+ "asof": "2026-09-11T23:12:15+00:00",
  "count": 4,
  "prices": {
   "ADBE": {
-   "asof": "2026-09-11T22:28:11+00:00",
+   "asof": "2026-09-11T23:10:01+00:00",
    "ccy": "USD",
-   "ext": 252.44,
+   "ext": 252.076,
    "mkt": "late_trading",
    "name": "Adobe Inc.",
    "prev": 248.83,
@@ -13,9 +13,9 @@
    "provider": "massive"
   },
   "APTV": {
-   "asof": "2026-09-11T22:09:01+00:00",
+   "asof": "2026-09-11T23:10:01+00:00",
    "ccy": "USD",
-   "ext": 45.46,
+   "ext": 45.5,
    "mkt": "late_trading",
    "name": "Aptiv PLC",
    "prev": 45.69,
@@ -23,9 +23,9 @@
    "provider": "massive"
   },
   "ARM": {
-   "asof": "2026-09-11T22:28:01+00:00",
+   "asof": "2026-09-11T23:12:09+00:00",
    "ccy": "USD",
-   "ext": 264.6,
+   "ext": 264.85,
    "mkt": "late_trading",
    "name": "Arm Holdings plc American Depositary Shares",
    "prev": 254.18,
