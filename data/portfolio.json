@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated": "2026-09-14T06:28:01.228Z",
+  "updated": "2026-09-14T06:28:34.867Z",
   "trades": [
     {
       "id": "T-0001",
@@ -14,6 +14,19 @@
       "quote_symbol": null,
       "notes": "",
       "created": "2026-09-03T02:40:40.911Z"
+    },
+    {
+      "id": "T-0002",
+      "ticker": "DECK",
+      "side": "LONG",
+      "qty": 1,
+      "entry_date": "2026-09-11",
+      "entry_price": 81.27,
+      "exit_date": null,
+      "exit_price": null,
+      "quote_symbol": null,
+      "notes": "",
+      "created": "2026-09-14T06:28:33.662Z"
     }
   ],
   "watchlist": [
