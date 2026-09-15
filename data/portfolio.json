@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated": "2026-09-14T07:13:17.842Z",
+  "updated": "2026-09-15T03:49:33.654Z",
   "trades": [
     {
       "id": "T-0001",
@@ -65,7 +65,19 @@
     }
   ],
   "too_hard": [],
-  "ideas": [],
+  "ideas": [
+    {
+      "id": "I-0001",
+      "title": "Refinery MRO",
+      "tickers": [],
+      "body": "1. Several transcripts from MRO companies state that they anticipate lower MRO requirements for rest of 2026 and higher in 2027 due to the geopolitical tensions - refiners cannot afford to shutdown plants \n2. Likely more extension MRO required when they do eventually shut down plants for MRO - could be when fuel prices come down / when geopolitcal tensions ease",
+      "follow_up": null,
+      "status": "open",
+      "created": "2026-09-15T03:49:32.929Z",
+      "updated": "2026-09-15T03:49:32.929Z",
+      "done": null
+    }
+  ],
   "theses": {
     "APTV": {
       "text": "1. Intrinsic value should be closer to US$70/sh. \n2. Likely to do well if market shifts focus to Physcial AI since many of the parts that they are supplying to EV makers right now would be relevant for Physcial AI\n3. More capital-light post-spinoff; allow for higher capital return to shareholders should there be more favourable investment opportunities - at US$39/sh downside is likely limited",
