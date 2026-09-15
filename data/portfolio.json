@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated": "2026-09-15T03:49:33.654Z",
+  "updated": "2026-09-15T03:49:47.307Z",
   "trades": [
     {
       "id": "T-0001",
@@ -71,10 +71,10 @@
       "title": "Refinery MRO",
       "tickers": [],
       "body": "1. Several transcripts from MRO companies state that they anticipate lower MRO requirements for rest of 2026 and higher in 2027 due to the geopolitical tensions - refiners cannot afford to shutdown plants \n2. Likely more extension MRO required when they do eventually shut down plants for MRO - could be when fuel prices come down / when geopolitcal tensions ease",
-      "follow_up": null,
+      "follow_up": "2026-11-02",
       "status": "open",
       "created": "2026-09-15T03:49:32.929Z",
-      "updated": "2026-09-15T03:49:32.929Z",
+      "updated": "2026-09-15T03:49:46.698Z",
       "done": null
     }
   ],
