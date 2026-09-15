@@ -1,8 +1,8 @@
 # Serene Paper Book
 
 A public, single-file paper-trading ledger: open positions ranked best to worst,
-a watchlist, closed trades, and a page per ticker with the owner-earnings intrinsic
-value and a written thesis. Anyone with the link can view and refresh prices;
+a watchlist, closed trades, an ideas scratchpad, and a page per ticker with the
+owner-earnings intrinsic value and a written thesis. Anyone with the link can view and refresh prices;
 editing needs the PIN.
 
 ## How it fits together
@@ -10,7 +10,7 @@ editing needs the PIN.
 | Piece | Role |
 |---|---|
 | `index.html` | The whole interface. No build step, no framework. |
-| `data/portfolio.json` | **The database of record.** Trades, watchlist, too-hard pile, theses, valuations. Every edit is a git commit, so history is the audit trail. |
+| `data/portfolio.json` | **The database of record.** Trades, watchlist, too-hard pile, ideas, theses, valuations. Every edit is a git commit, so history is the audit trail. |
 | `data/prices.json` | Price snapshot written by the scheduled workflow (Massive, key kept as a repo secret). The page falls back to it when a live quote is unavailable. |
 | `data/vault.json` | The editing token, encrypted with the PIN (PBKDF2 + AES-GCM in the browser). Created once from the `#/setup` page. |
 | `refresh_prices.py` | Writes `data/prices.json`. Massive first, Yahoo as fallback. |
@@ -46,6 +46,13 @@ A too-hard entry records the date and price it was set aside, the reason, and, w
 came off the watchlist, the original watchlist date and price, so the cost of passing
 can be read later. Each action commits to `data/portfolio.json`; the page re-reads the
 latest version before writing so two editors do not clobber each other.
+
+**Ideas & themes** is a scratchpad for anything not yet a name on the watchlist: a
+theme to look into, a question to answer, a name to circle back to. Each entry has a
+title, optional tickers, free-text notes (`$TICKER` in the text links to that ticker's
+page) and an optional follow-up date; entries due today or overdue are flagged on the
+home page, done entries fold away under the list, and a ticker's page lists every idea
+that mentions it. A half-written entry is kept in the browser until it is saved.
 
 The PIN is a convenience lock, not a secret: the encrypted token sits in a public
 repository, so keep the token fine-grained and scoped to this repository alone.

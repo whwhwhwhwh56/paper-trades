@@ -90,6 +90,21 @@ textarea{min-height:220px;resize:vertical;font-family:var(--serif);font-size:15p
 .kv .k{color:var(--ink3)}.kv .v{font-variant-numeric:tabular-nums}
 .thesis{white-space:pre-wrap;font-family:var(--serif);font-size:15px;line-height:1.65}
 .thesis:empty:before{content:"No thesis written yet.";color:var(--ink3)}
+.ideas{padding:4px 16px 8px}
+.idea{padding:12px 0;border-bottom:1px solid var(--rule)}
+.idea:last-child{border-bottom:none}
+.idea-hd{display:flex;gap:8px 10px;align-items:baseline;flex-wrap:wrap}
+.idea-hd .t{font-family:var(--serif);font-size:16px;font-weight:600}
+.idea-hd .tks a{font-family:var(--mono);font-size:12px;font-weight:500;margin-right:6px}
+.idea-hd .meta{color:var(--ink3);font-size:12px}
+.idea-hd .act{margin-left:auto;white-space:nowrap}
+.idea-b{white-space:pre-wrap;font-family:var(--serif);font-size:15px;line-height:1.6;margin-top:6px;max-width:840px}
+.idea-b a{font-family:var(--mono);font-size:13px}
+.idea.done .t,.idea.done .idea-b{color:var(--ink3)}
+.idea.done .t{text-decoration:line-through;text-decoration-color:var(--rule)}
+details.done-ideas>summary{cursor:pointer;color:var(--ink3);font-size:12px;padding:10px 0 4px;user-select:none}
+.modal.wide{max-width:680px}
+.modal textarea{min-height:180px}
 .modal-bg{position:fixed;inset:0;background:rgba(10,16,24,.45);display:flex;align-items:center;justify-content:center;z-index:50;padding:20px}
 .modal{background:var(--surface);border:1px solid var(--rule);border-radius:12px;box-shadow:var(--shadow);max-width:440px;width:100%;padding:20px}
 .modal h3{margin-bottom:8px}
@@ -157,7 +172,7 @@ function toast(msg, err) { S.toast = { msg, err }; renderToast(); clearTimeout(S
 function renderToast() { let t = $("#toast"); if (t) t.remove(); if (!S.toast) return; t = document.createElement("div"); t.id = "toast"; t.className = "toast" + (S.toast.err ? " err" : ""); t.textContent = S.toast.msg; document.body.appendChild(t); }
 
 /* ---------- data loading ---------- */
-function emptyBook() { return { version: 1, updated: null, trades: [], watchlist: [], too_hard: [], theses: {}, valuations: {} }; }
+function emptyBook() { return { version: 1, updated: null, trades: [], watchlist: [], too_hard: [], ideas: [], theses: {}, valuations: {} }; }
 async function loadBook() {
   if (LOCAL) { try { const r = await fetch("/api/book?t=" + Date.now(), { cache: "no-store" }); if (r.ok) { S.data = normalise(await r.json()); return; } } catch (e) { } }
   // With a token we read through the API (always fresh); otherwise the Pages copy (fresh within ~1 min of a commit).
@@ -172,7 +187,7 @@ async function loadBook() {
     S.data = normalise(r.ok ? await r.json() : emptyBook());
   } catch (e) { S.data = emptyBook(); }
 }
-function normalise(d) { const b = emptyBook(); Object.assign(b, d || {}); b.trades ||= []; b.watchlist ||= []; b.too_hard ||= []; b.theses ||= {}; b.valuations ||= {}; return b; }
+function normalise(d) { const b = emptyBook(); Object.assign(b, d || {}); b.trades ||= []; b.watchlist ||= []; b.too_hard ||= []; b.ideas ||= []; b.theses ||= {}; b.valuations ||= {}; return b; }
 async function loadSnapshot() {
   try { const r = await fetch("data/prices.json?t=" + Date.now(), { cache: "no-store" }); if (r.ok) { const j = await r.json(); S.snapshot = j.prices || {}; S.snapshotAsof = j.asof || null; } } catch (e) { }
 }
@@ -343,11 +358,13 @@ async function verifyToken(token) {
 }
 
 /* ---------- modals ---------- */
-function openModal(html, onMount) { S.modal = { html, onMount }; renderModal(); }
+function openModal(html, onMount, wide) { S.modal = { html, onMount, wide: !!wide }; renderModal(); }
 function closeModal() { S.modal = null; renderModal(); }
 function renderModal() {
-  let m = $("#modal"); if (m) m.remove(); if (!S.modal) return;
-  m = document.createElement("div"); m.id = "modal"; m.className = "modal-bg"; m.innerHTML = `<div class="modal">${S.modal.html}</div>`;
+  let m = $("#modal");
+  if (m && S.modal && m._for === S.modal) return;   // a re-render (price refresh) must not wipe what is being typed
+  if (m) m.remove(); if (!S.modal) return;
+  m = document.createElement("div"); m.id = "modal"; m.className = "modal-bg"; m._for = S.modal; m.innerHTML = `<div class="modal${S.modal.wide ? " wide" : ""}">${S.modal.html}</div>`;
   m.addEventListener("click", e => { if (e.target === m) closeModal(); });
   document.body.appendChild(m); S.modal.onMount && S.modal.onMount(m);
   const f = m.querySelector("input,textarea,select"); f && f.focus();
@@ -489,6 +506,56 @@ function tooHardToWatch(id) {
     w.id = uid("W", d.watchlist); d.watchlist.push(w); d.too_hard = d.too_hard.filter(x => x.id !== id);
   }, `${h.ticker}: too hard -> watchlist`));
 }
+/* ---------- ideas scratchpad ---------- */
+const parseTickers = s => [...new Set(String(s || "").toUpperCase().split(/[\s,;]+/).map(x => x.replace(/^\$/, "")).filter(x => /^[A-Z][A-Z0-9.\-]{0,11}$/.test(x)))];
+const ideaDraftKey = id => "pb_idea_" + (id || "new");
+function ideaForm(id, prefillTicker) {
+  const cur = id ? S.data.ideas.find(x => x.id === id) : null; if (id && !cur) return;
+  let draft = null; try { draft = JSON.parse(localStorage.getItem(ideaDraftKey(id)) || "null"); } catch (e) { }
+  const v = draft || cur || { title: "", tickers: prefillTicker ? [prefillTicker] : [], body: "", follow_up: null, status: "open" };
+  openModal(`<h3>${cur ? "Edit idea" : "New idea or theme"}</h3><p class="hint">A scratchpad entry: a theme to look into, a name to circle back to, a question to answer. Give it a follow-up date and it is flagged when due. <code>$TICKER</code> in the text links to that ticker's page.</p><form id="f">
+    <label class="f">Title<input name="title" required value="${esc(v.title)}" placeholder="e.g. Footwear selldown — industry-wide or DECK-specific?"></label>
+    <div class="row" style="margin-top:8px"><label class="f grow">Tickers (optional)<input name="tickers" value="${esc((v.tickers || []).join(" "))}" placeholder="DECK NKE ONON" style="text-transform:uppercase"></label>
+    <label class="f">Follow up by<input name="follow_up" type="date" value="${esc(v.follow_up || "")}"></label>
+    ${cur ? `<label class="f">Status<select name="status"><option value="open"${v.status !== "done" ? " selected" : ""}>open</option><option value="done"${v.status === "done" ? " selected" : ""}>done</option></select></label>` : ""}</div>
+    <label class="f" style="margin-top:8px">Notes<textarea name="body" placeholder="What the idea is, what you would need to see, where to look next time.">${esc(v.body)}</textarea></label>
+    <div class="row" style="margin-top:12px;justify-content:space-between"><span class="hint" id="idea-draft">${draft ? "unsaved draft restored from this browser" : ""}</span><div class="row"><button type="button" onclick="closeIdeaForm('${id || ""}')">Cancel</button><button class="primary" type="submit">${cur ? "Save" : "Add"}</button></div></div></form>`,
+    m => {
+      const f = m.querySelector("#f");
+      f.addEventListener("input", () => { const fd = Object.fromEntries(new FormData(f).entries()); try { localStorage.setItem(ideaDraftKey(id), JSON.stringify({ title: fd.title, tickers: parseTickers(fd.tickers), body: fd.body, follow_up: fd.follow_up || null, status: fd.status || v.status })); } catch (e) { } const h = m.querySelector("#idea-draft"); if (h) h.textContent = "draft kept in this browser until saved"; });
+      f.addEventListener("submit", e => {
+        e.preventDefault(); const fd = Object.fromEntries(new FormData(f).entries()); const now = new Date().toISOString();
+        const fields = { title: fd.title.trim(), tickers: parseTickers(fd.tickers), body: fd.body.replace(/\s+$/, ""), follow_up: fd.follow_up || null };
+        const msg = `idea: ${fields.title.slice(0, 60)}`;
+        commitBook(d => {
+          if (cur) { const x = d.ideas.find(y => y.id === id); if (!x) return false; Object.assign(x, fields, { status: fd.status || x.status || "open", updated: now }); if (x.status === "done" && !x.done) x.done = now; if (x.status !== "done") x.done = null; }
+          else { const n = { id: uid("I", d.ideas), ...fields, status: "open", created: now, updated: now, done: null }; d.ideas.push(n); }
+        }, msg).then(ok => { if (ok) { try { localStorage.removeItem(ideaDraftKey(id)); } catch (e) { } closeModal(); } });
+      });
+    }, true);
+}
+function closeIdeaForm(id) { try { localStorage.removeItem(ideaDraftKey(id || null)); } catch (e) { } closeModal(); }
+function setIdeaStatus(id, status) { const i = S.data.ideas.find(x => x.id === id); if (!i) return; commitBook(d => { const x = d.ideas.find(y => y.id === id); if (!x) return false; const now = new Date().toISOString(); x.status = status; x.updated = now; x.done = status === "done" ? now : null; }, `idea: ${status === "done" ? "done" : "reopen"} — ${i.title.slice(0, 50)}`); }
+function deleteIdea(id) { const i = S.data.ideas.find(x => x.id === id); if (!i) return; confirmBox("Delete idea", `Remove "${i.title}" from the scratchpad? The commit history keeps a copy.`, () => commitBook(d => { d.ideas = d.ideas.filter(x => x.id !== id); }, `idea: delete — ${i.title.slice(0, 50)}`)); }
+// $TICKER in the body becomes a link to that ticker's page.
+const ideaBody = s => esc(s).replace(/\$([A-Za-z][A-Za-z0-9.\-]{0,11})\b/g, (m, t) => `<a href="#/t/${t.toUpperCase()}">$${t.toUpperCase()}</a>`);
+function ideaMentions(i, tk) { return (i.tickers || []).includes(tk) || new RegExp("\\$" + tk.replace(/[.\-]/g, "\\$&") + "\\b", "i").test(i.body || ""); }
+function ideaDue(i) { if (i.status === "done" || !i.follow_up) return null; const d = daysBetween(todayISO(), i.follow_up); return d < 0 ? "overdue" : d === 0 ? "today" : d <= 7 ? "soon" : "later"; }
+function ideaBlock(i, ed) {
+  const due = ideaDue(i);
+  const duePill = !i.follow_up ? "" : i.status === "done" ? `<span class="meta">was due ${esc(i.follow_up)}</span>` : due === "overdue" ? `<span class="pill bad">overdue · ${esc(i.follow_up)}</span>` : due === "today" ? `<span class="pill warn">due today</span>` : due === "soon" ? `<span class="pill warn">follow up ${esc(i.follow_up)}</span>` : `<span class="pill">follow up ${esc(i.follow_up)}</span>`;
+  const when = i.status === "done" ? `done ${esc((i.done || i.updated || "").slice(0, 10))}` : `${(i.updated || "").slice(0, 10) !== (i.created || "").slice(0, 10) ? "updated " + esc((i.updated || "").slice(0, 10)) : "added " + esc((i.created || "").slice(0, 10))}`;
+  return `<div class="idea${i.status === "done" ? " done" : ""}" id="${esc(i.id)}"><div class="idea-hd"><span class="t">${esc(i.title)}</span>${(i.tickers || []).length ? `<span class="tks">${i.tickers.map(t => `<a href="#/t/${esc(t)}">${esc(t)}</a>`).join("")}</span>` : ""}${duePill}<span class="meta">${when}</span>
+    ${ed ? `<span class="act"><button class="small ghost" onclick="ideaForm('${esc(i.id)}')">Edit</button> ${i.status === "done" ? `<button class="small ghost" onclick="setIdeaStatus('${esc(i.id)}','open')">Reopen</button>` : `<button class="small ghost" onclick="setIdeaStatus('${esc(i.id)}','done')">Done</button>`} <button class="small ghost" onclick="deleteIdea('${esc(i.id)}')" title="delete">✕</button></span>` : ""}</div>
+    ${i.body ? `<div class="idea-b">${ideaBody(i.body)}</div>` : ""}</div>`;
+}
+const ideaOrder = (a, b) => (a.follow_up || "9999") < (b.follow_up || "9999") ? -1 : (a.follow_up || "9999") > (b.follow_up || "9999") ? 1 : (b.updated || "") > (a.updated || "") ? 1 : -1;
+function ideasCard(list, ed, opts) {
+  const open = list.filter(i => i.status !== "done").sort(ideaOrder), done = list.filter(i => i.status === "done").sort((a, b) => (b.done || b.updated || "") > (a.done || a.updated || "") ? 1 : -1);
+  const dueN = open.filter(i => ["overdue", "today"].includes(ideaDue(i))).length;
+  const body = open.length || done.length ? `<div class="ideas">${open.map(i => ideaBlock(i, ed)).join("")}${done.length ? `<details class="done-ideas"${opts?.openDone ? " open" : ""}><summary>${done.length} done — show</summary>${done.map(i => ideaBlock(i, ed)).join("")}</details>` : ""}</div>` : `<div class="empty">${opts?.empty || "Nothing on the scratchpad yet."} ${ed ? 'Use <b>+ Idea</b> to jot one down.' : ""}</div>`;
+  return `<div class="card"><div class="hd"><h2>${esc(opts?.title || "Ideas & themes")}</h2><span class="sub">${opts?.sub || "scratchpad — things to follow up next time"}${dueN ? ` · <span style="color:var(--warn)">${dueN} due</span>` : ""}${open.length ? ` · ${open.length} open` : ""}</span></div>${body}</div>`;
+}
 function saveThesis(tk) {
   const ta = $("#thesis-ta"); if (!ta) return; const text = ta.value;
   commitBook(d => { d.theses[tk] = { text, updated: new Date().toISOString() }; }, `${tk}: thesis`).then(ok => { if (ok) { delete S.drafts[tk]; try { localStorage.removeItem("pb_draft_" + tk); } catch (e) { } } });
@@ -523,10 +590,10 @@ async function ensureQuote(tk) {
 }
 function parseRoute() { const h = location.hash.replace(/^#\/?/, ""); if (h.startsWith("t/")) return { view: "ticker", tk: decodeURIComponent(h.slice(2)).toUpperCase() }; if (h === "setup") return { view: "setup" }; return { view: "home" }; }
 function header() {
-  return `<header class="top"><div class="brand"><h1><a href="#/" style="color:inherit">Serene Paper Book</a></h1><small>paper trades · watchlist · too-hard pile · intrinsic value</small></div>
+  return `<header class="top"><div class="brand"><h1><a href="#/" style="color:inherit">Serene Paper Book</a></h1><small>paper trades · watchlist · too-hard pile · ideas · intrinsic value</small></div>
   <div class="toolbar"><span class="status" id="status"></span>
   <button id="refresh" class="primary" ${S.refreshing ? "disabled" : ""}>${S.refreshing ? "Refreshing…" : "↻ Refresh prices"}</button>
-  ${S.token ? `<button onclick="addTradeForm()">+ Trade</button><button onclick="addWatchForm()">+ Watch</button><button onclick="addTooHardForm()">+ Too hard</button>${LOCAL ? '<span class="pill acc" title="served by serve_local.py — edits write to data/portfolio.json">local edit mode</span>' : `<button class="ghost" onclick="lock()" title="Lock editing">🔓 Lock</button>`}` : `<button class="ghost" onclick="openUnlock()">🔒 Unlock editing</button>`}
+  ${S.token ? `<button onclick="addTradeForm()">+ Trade</button><button onclick="addWatchForm()">+ Watch</button><button onclick="addTooHardForm()">+ Too hard</button><button onclick="ideaForm(null)">+ Idea</button>${LOCAL ? '<span class="pill acc" title="served by serve_local.py — edits write to data/portfolio.json">local edit mode</span>' : `<button class="ghost" onclick="lock()" title="Lock editing">🔓 Lock</button>`}` : `<button class="ghost" onclick="openUnlock()">🔒 Unlock editing</button>`}
   <button class="ghost" id="theme" title="Toggle theme">◐</button></div></header>`;
 }
 function renderStatus() { const s = $("#status"); if (!s) return; s.innerHTML = statusText(); const b = $("#refresh"); if (b) { b.disabled = S.refreshing; b.textContent = S.refreshing ? "Refreshing…" : "↻ Refresh prices"; } }
@@ -565,6 +632,7 @@ function homeView() {
   return tiles +
     `<div class="card"><div class="hd"><h2>Open positions</h2><span class="sub">ranked best to worst by return to date · click a column to re-rank</span></div>${openT}</div>` +
     `<div class="card"><div class="hd"><h2>Watchlist</h2><span class="sub">names waiting for a price</span></div>${watchT}</div>` +
+    ideasCard(S.data.ideas, ed) +
     `<div class="card"><div class="hd"><h2>Closed trades</h2><span class="sub">realised results</span></div>${closedT}</div>` +
     `<div class="card"><div class="hd"><h2>Too-hard pile</h2><span class="sub">names set aside, with the date and price</span></div>${hardT}</div>`;
 }
@@ -608,7 +676,9 @@ function tickerView(tk) {
     rows.map(({ t, m }) => `<tr><td class="l">${t.entry_date}</td><td class="l">${t.exit_date || '<span class="pill good">open</span>'}</td><td><span class="pill ${t.side === "SHORT" ? "warn" : ""}">${t.side}</span> ${fmtN(t.qty, 0)}</td><td>${fmtN(t.entry_price)}</td><td>${m.open ? priceCell(tk) : fmtN(t.exit_price)}</td><td class="${cls(m.ret)}">${fmtP(m.ret)}</td><td class="${cls(m.irr)}">${fmtP(m.irr)}${m.days < 30 && m.irr !== null ? "<sup>†</sup>" : ""}</td><td class="${cls(m.pnl)}">${fmtMoney(m.pnl)}</td><td>${m.days}</td>${ed ? `<td class="nowrap">${m.open ? `<button class="small" onclick="exitTradeForm('${t.id}')">Exit</button>` : `<button class="small ghost" onclick="reopenTrade('${t.id}')">Reopen</button>`} <button class="small ghost" onclick="deleteTrade('${t.id}')">✕</button></td>` : ""}</tr>${t.notes || t.exit_notes ? `<tr><td colspan="${ed ? 10 : 9}" class="l hint" style="white-space:normal">${t.notes ? "Entry: " + esc(t.notes) : ""}${t.notes && t.exit_notes ? " · " : ""}${t.exit_notes ? "Exit: " + esc(t.exit_notes) : ""}</td></tr>` : ""}`).join("") + `</tbody></table></div>` : `<div class="empty">No trades in ${esc(tk)} yet.</div>`}
     ${watch.length ? `<div class="bd hint" style="border-top:1px solid var(--rule)">On the watchlist since ${esc(watch[0].added)}${watch[0].target_price ? ` · target ${fmtN(watch[0].target_price)}` : ""}${watch[0].notes ? ` · ${esc(watch[0].notes)}` : ""}</div>` : ""}
     ${hard.length ? `<div class="bd hint" style="border-top:1px solid var(--rule)">In the too-hard pile since ${esc(hard[0].added)}${num(hard[0].price_at_add) ? ` at ${fmtN(hard[0].price_at_add)}` : ""}${hard[0].from_watch?.added ? ` · watched from ${esc(hard[0].from_watch.added)}` : ""}${hard[0].reason ? ` · ${esc(hard[0].reason)}` : ""}</div>` : ""}
-    ${ed ? `<div class="bd row" style="border-top:1px solid var(--rule)"><button class="small" onclick="addTradeFormFor('${tk}')">+ Trade in ${esc(tk)}</button>${watch.length ? "" : `<button class="small ghost" onclick="addWatchForm('${tk}')">+ Watch</button>`}${hard.length ? "" : `<button class="small ghost" onclick="addTooHardForm('${tk}')">+ Too hard</button>`}</div>` : ""}</div>`;
+    ${ed ? `<div class="bd row" style="border-top:1px solid var(--rule)"><button class="small" onclick="addTradeFormFor('${tk}')">+ Trade in ${esc(tk)}</button>${watch.length ? "" : `<button class="small ghost" onclick="addWatchForm('${tk}')">+ Watch</button>`}${hard.length ? "" : `<button class="small ghost" onclick="addTooHardForm('${tk}')">+ Too hard</button>`}<button class="small ghost" onclick="ideaForm(null,'${tk}')">+ Idea</button></div>` : ""}</div>`;
+  const ideas = S.data.ideas.filter(i => ideaMentions(i, tk));
+  const ideasC = ideas.length ? ideasCard(ideas, ed, { title: `Ideas mentioning ${tk}`, sub: "from the scratchpad", openDone: true }) : "";
   const draft = S.drafts[tk] ?? (() => { try { return localStorage.getItem("pb_draft_" + tk); } catch (e) { return null; } })();
   const thesisCard = `<div class="card"><div class="hd"><h2>Thesis</h2><span class="sub">${th?.updated ? "updated " + esc(th.updated.slice(0, 10)) : "not written yet"}</span></div><div class="bd">
     ${ed ? `<textarea id="thesis-ta" placeholder="Why this business, why this price, what would prove you wrong, what you expect to see and by when.">${esc(draft ?? th?.text ?? "")}</textarea>
@@ -617,7 +687,7 @@ function tickerView(tk) {
   </div></div>`;
   const quoteLine = q && q.price !== null ? `<div class="row" style="align-items:baseline;gap:14px"><span class="big">${fmtN(q.price)}</span><span class="hint">${q.ccy || ""} ${q.src === "live" ? "live" : "snapshot"} · ${esc((q.asof || "").slice(0, 16).replace("T", " "))}${q.prev ? " · prev close " + fmtN(q.prev) + " (" + fmtP(q.price / q.prev - 1) + ")" : ""}${q.ext && q.mkt !== "REG_MKT" ? " · after hours " + fmtN(q.ext) : ""}</span></div>` : `<div class="hint">no quote yet — press refresh</div>`;
   return `<div class="crumb"><a href="#/">← Book</a></div><div class="row" style="justify-content:space-between;align-items:flex-end;margin-bottom:16px"><div><h1 style="font-size:30px">${esc(tk)} <span style="font-weight:400;color:var(--ink3);font-size:18px">${esc(name)}</span></h1>${quoteLine}</div></div>
-    <div class="detail-grid"><div>${valCard}${tradeCard}</div><div>${thesisCard}</div></div>`;
+    <div class="detail-grid"><div>${valCard}${tradeCard}</div><div>${thesisCard}${ideasC}</div></div>`;
 }
 function addTradeFormFor(tk) { addTradeForm(); setTimeout(() => { const i = $("#modal [name=ticker]"); if (i) i.value = tk; }, 0); }
 function discardDraft(tk) { delete S.drafts[tk]; try { localStorage.removeItem("pb_draft_" + tk); } catch (e) { } render(); }
