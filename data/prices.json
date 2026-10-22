@@ -1,11 +1,11 @@
 {
- "asof": "2026-10-22T23:14:55+00:00",
+ "asof": "2026-10-22T23:57:26+00:00",
  "count": 5,
  "prices": {
   "ADBE": {
-   "asof": "2026-10-22T23:14:39+00:00",
+   "asof": "2026-10-22T23:57:01+00:00",
    "ccy": "USD",
-   "ext": 269,
+   "ext": 269.87,
    "mkt": "late_trading",
    "name": "Adobe Inc.",
    "prev": 255.06,
@@ -13,9 +13,9 @@
    "provider": "massive"
   },
   "APTV": {
-   "asof": "2026-10-22T23:00:01+00:00",
+   "asof": "2026-10-22T23:46:01+00:00",
    "ccy": "USD",
-   "ext": 43.81,
+   "ext": 43.83,
    "mkt": "late_trading",
    "name": "Aptiv PLC",
    "prev": 44.34,
@@ -23,9 +23,9 @@
    "provider": "massive"
   },
   "ARM": {
-   "asof": "2026-10-22T23:14:48+00:00",
+   "asof": "2026-10-22T23:57:13+00:00",
    "ccy": "USD",
-   "ext": 209.04,
+   "ext": 208.7,
    "mkt": "late_trading",
    "name": "Arm Holdings plc American Depositary Shares",
    "prev": 226.59,
@@ -33,9 +33,9 @@
    "provider": "massive"
   },
   "DECK": {
-   "asof": "2026-10-22T23:13:01+00:00",
+   "asof": "2026-10-22T23:57:17+00:00",
    "ccy": "USD",
-   "ext": 79.35,
+   "ext": 79.45,
    "mkt": "late_trading",
    "name": "Deckers Outdoor Corp",
    "prev": 85.49,
@@ -43,9 +43,9 @@
    "provider": "massive"
   },
   "SHOE": {
-   "asof": "2026-10-22T21:33:01+00:00",
+   "asof": "2026-10-22T23:55:52+00:00",
    "ccy": "USD",
-   "ext": 13.94,
+   "ext": 14.17,
    "mkt": "late_trading",
    "name": "Shoe Station Group, Inc. Common Stock",
    "prev": 13.22,
