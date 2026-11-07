@@ -1,9 +1,9 @@
 {
- "asof": "2026-11-07T00:03:30+00:00",
+ "asof": "2026-11-07T00:51:31+00:00",
  "count": 5,
  "prices": {
   "ADBE": {
-   "asof": "2026-11-07T00:02:01+00:00",
+   "asof": "2026-11-07T00:51:07+00:00",
    "ccy": "USD",
    "ext": 239.3,
    "mkt": "late_trading",
@@ -13,9 +13,9 @@
    "provider": "massive"
   },
   "APTV": {
-   "asof": "2026-11-07T00:01:01+00:00",
+   "asof": "2026-11-07T00:33:01+00:00",
    "ccy": "USD",
-   "ext": 39.85,
+   "ext": 39.5687,
    "mkt": "late_trading",
    "name": "Aptiv PLC",
    "prev": 40.85,
@@ -23,9 +23,9 @@
    "provider": "massive"
   },
   "ARM": {
-   "asof": "2026-11-07T00:03:09+00:00",
+   "asof": "2026-11-07T00:51:24+00:00",
    "ccy": "USD",
-   "ext": 173.8197,
+   "ext": 173.8,
    "mkt": "late_trading",
    "name": "Arm Holdings plc American Depositary Shares",
    "prev": 166.72,
@@ -33,9 +33,9 @@
    "provider": "massive"
   },
   "DECK": {
-   "asof": "2026-11-07T00:02:01+00:00",
+   "asof": "2026-11-07T00:31:01+00:00",
    "ccy": "USD",
-   "ext": 87,
+   "ext": 87.05,
    "mkt": "late_trading",
    "name": "Deckers Outdoor Corp",
    "prev": 87.74,
@@ -43,7 +43,7 @@
    "provider": "massive"
   },
   "SHOE": {
-   "asof": "2026-11-06T21:11:01+00:00",
+   "asof": "2026-11-07T00:31:01+00:00",
    "ccy": "USD",
    "ext": 14.54,
    "mkt": "late_trading",
