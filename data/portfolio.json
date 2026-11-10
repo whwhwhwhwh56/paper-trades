@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated": "2026-11-10T08:05:50.755Z",
+  "updated": "2026-11-10T08:06:31.929Z",
   "trades": [
     {
       "id": "T-0001",
@@ -42,17 +42,6 @@
       "created": "2026-09-07T03:06:39.005Z"
     },
     {
-      "id": "W-0003",
-      "ticker": "ARM",
-      "added": "2026-09-10",
-      "price_at_add": null,
-      "target_price": null,
-      "qty": null,
-      "quote_symbol": null,
-      "notes": "",
-      "created": "2026-09-10T09:36:07.245Z"
-    },
-    {
       "id": "W-0004",
       "ticker": "LDOS",
       "added": "2026-11-10",
@@ -80,6 +69,22 @@
         "notes": "1. Intrinsic Value likely to be closer to $70 without factoring in upside from potentail industry physical AI tailwinds. Thesis is that most of the parts that they are supplying to EV makers are similar to Physical AI and should do well should market focus on Physical AI"
       },
       "created": "2026-11-10T08:05:50.201Z"
+    },
+    {
+      "id": "H-0002",
+      "ticker": "ARM",
+      "added": "2026-11-10",
+      "price_at_add": 186.3,
+      "quote_symbol": null,
+      "reason": "",
+      "from_watch": {
+        "id": "W-0003",
+        "added": "2026-09-10",
+        "price_at_add": null,
+        "target_price": null,
+        "notes": ""
+      },
+      "created": "2026-11-10T08:06:31.368Z"
     }
   ],
   "ideas": [
