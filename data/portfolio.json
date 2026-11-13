@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated": "2026-11-12T08:52:11.284Z",
+  "updated": "2026-11-13T03:41:09.475Z",
   "trades": [
     {
       "id": "T-0001",
@@ -98,22 +98,6 @@
     }
   ],
   "too_hard": [
-    {
-      "id": "H-0001",
-      "ticker": "APTV",
-      "added": "2026-11-10",
-      "price_at_add": 39.91,
-      "quote_symbol": null,
-      "reason": "1. Intrinsic Value likely to be closer to $70 without factoring in upside from potentail industry physical AI tailwinds. Thesis is that most of the parts that they are supplying to EV makers are similar to Physical AI and should do well should market focus on Physical AI",
-      "from_watch": {
-        "id": "W-0002",
-        "added": "2026-09-10",
-        "price_at_add": 44.51,
-        "target_price": 39,
-        "notes": "1. Intrinsic Value likely to be closer to $70 without factoring in upside from potentail industry physical AI tailwinds. Thesis is that most of the parts that they are supplying to EV makers are similar to Physical AI and should do well should market focus on Physical AI"
-      },
-      "created": "2026-11-10T08:05:50.201Z"
-    },
     {
       "id": "H-0002",
       "ticker": "ARM",
