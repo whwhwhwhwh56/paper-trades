@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated": "2026-11-13T03:41:09.475Z",
+  "updated": "2026-11-13T08:01:40.646Z",
   "trades": [
     {
       "id": "T-0001",
@@ -130,8 +130,8 @@
   ],
   "theses": {
     "APTV": {
-      "text": "1. Intrinsic value should be closer to US$70/sh. \n2. Likely to do well if market shifts focus to Physcial AI since many of the parts that they are supplying to EV makers right now would be relevant for Physcial AI\n3. More capital-light post-spinoff; allow for higher capital return to shareholders should there be more favourable investment opportunities - at US$39/sh downside is likely limited",
-      "updated": "2026-09-10T06:13:09.942Z"
+      "text": "- Earnings power is resilient in a business it has run for decades. Pro forma owner earnings (excluding Versigent) were about $1.07bn in FY2025, and the pipeline's conservative anchor is $934m. Free cash flow was about $1.5bn in FY2025. The profitable core, Engineered Components, has held a 25–26% gross margin and grew 7% in Q3 on flat production.\n- Demand per vehicle keeps rising. Cars carry more electronics every year: driver assistance, EV high-voltage parts, high-speed data cables and software-defined architectures. Annual new awards have been $27–34bn, and more than $13bn was booked in 2026 to September.\n- Robotics and other non-auto work is real upside, though small. Non-auto sales are above $3bn (+11% in Q3), and data-centre, energy-storage and aerospace awards are growing. Robotics and drones are targeted at about $300m a year with higher margins and little capex.\n- The price assumes bad news. At $38.81, the shares are 75% below their 2021 peak and at a five-year low. They trade at about 6.4 times forward earnings, 8.6 times the anchor owner earnings and 0.9 times book. The house valuation range is $61–77 a share, with a buy-below price of $41.87.\n- Capital return supports the price. Aptiv has committed to returning 100% of free cash flow through 2027. At least $650m of buybacks this year is about 8% of the company.\n- The main risk is a weak economy. Aptiv has no minimum-volume protection, so weak consumers, chip shortages or tariffs reduce sales directly. Management's 2027 base case is flat production at best. Long term, vehicle demand should recover, but the timing is uncertain.\n- Don't expect a violent re-rating without a catalyst. Three straight negative results reactions have already de-rated the shares. A recovery probably needs evidence on free cash flow, Intelligent Systems margins or 2027 guidance, so expect a slow grind.",
+      "updated": "2026-11-13T08:01:40.646Z"
     },
     "ADBE": {
       "text": "1. GenAI is not going to replace ADBE. Labs are deprioritizing image and video genAI due to high compute requirements - if we are truly compute constrained then tokens will be allocated to the highest ROI use case which is language token which can do productive work.\n2. Will still be cheaper to do via conventional tools that ADBE offer. If Canva and Figma can truly disrupt ADBE, it would've done so long ago but company's Owners' Earnings has been growing steadily over past decade i.e. true franchise that will be hard to disrupt\n3. Cash cow - high share repurchase. Trading at 10x Owners' Earnings. Low capital requirements mean it will do well in inflationary environment and high cash flow will make it a good candidate in high yield environment",
