@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated": "2026-11-13T08:01:40.646Z",
+  "updated": "2026-11-16T06:15:18.632Z",
   "trades": [
     {
       "id": "T-0001",
@@ -95,6 +95,17 @@
       "quote_symbol": null,
       "notes": "",
       "created": "2026-11-12T08:52:10.720Z"
+    },
+    {
+      "id": "W-0007",
+      "ticker": "PYPL",
+      "added": "2026-11-16",
+      "price_at_add": 59.28,
+      "target_price": 60,
+      "qty": 1,
+      "quote_symbol": null,
+      "notes": "",
+      "created": "2026-11-16T06:15:18.077Z"
     }
   ],
   "too_hard": [
