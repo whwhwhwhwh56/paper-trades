@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated": "2026-11-16T06:15:18.632Z",
+  "updated": "2026-11-19T05:20:39.845Z",
   "trades": [
     {
       "id": "T-0001",
@@ -106,6 +106,17 @@
       "quote_symbol": null,
       "notes": "",
       "created": "2026-11-16T06:15:18.077Z"
+    },
+    {
+      "id": "W-0008",
+      "ticker": "HRMY",
+      "added": "2026-11-19",
+      "price_at_add": 33.11,
+      "target_price": 32,
+      "qty": 1,
+      "quote_symbol": null,
+      "notes": "",
+      "created": "2026-11-19T05:20:39.837Z"
     }
   ],
   "too_hard": [
