@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated": "2026-11-19T05:20:39.845Z",
+  "updated": "2026-11-19T06:41:42.767Z",
   "trades": [
     {
       "id": "T-0001",
@@ -106,17 +106,6 @@
       "quote_symbol": null,
       "notes": "",
       "created": "2026-11-16T06:15:18.077Z"
-    },
-    {
-      "id": "W-0008",
-      "ticker": "HRMY",
-      "added": "2026-11-19",
-      "price_at_add": 33.11,
-      "target_price": 32,
-      "qty": 1,
-      "quote_symbol": null,
-      "notes": "",
-      "created": "2026-11-19T05:20:39.837Z"
     }
   ],
   "too_hard": [
@@ -135,6 +124,22 @@
         "notes": ""
       },
       "created": "2026-11-10T08:06:31.368Z"
+    },
+    {
+      "id": "H-0001",
+      "ticker": "HRMY",
+      "added": "2026-11-19",
+      "price_at_add": 33.11,
+      "quote_symbol": null,
+      "reason": "Patent cliff in 2030, no visiblity on progress and likelihood of success of the next formulation that would extend the patent cliff",
+      "from_watch": {
+        "id": "W-0008",
+        "added": "2026-11-19",
+        "price_at_add": 33.11,
+        "target_price": 32,
+        "notes": ""
+      },
+      "created": "2026-11-19T06:41:42.134Z"
     }
   ],
   "ideas": [
