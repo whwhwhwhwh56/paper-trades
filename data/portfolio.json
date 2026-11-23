@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated": "2026-11-19T06:41:42.767Z",
+  "updated": "2026-11-23T01:28:01.819Z",
   "trades": [
     {
       "id": "T-0001",
@@ -27,6 +27,19 @@
       "quote_symbol": null,
       "notes": "",
       "created": "2026-09-14T06:28:33.662Z"
+    },
+    {
+      "id": "T-0003",
+      "ticker": "LDOS",
+      "side": "LONG",
+      "qty": 1,
+      "entry_date": "2026-11-23",
+      "entry_price": 122.21,
+      "exit_date": null,
+      "exit_price": null,
+      "quote_symbol": null,
+      "notes": "",
+      "created": "2026-11-23T01:28:00.669Z"
     }
   ],
   "watchlist": [
