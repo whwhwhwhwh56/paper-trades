@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated": "2026-11-23T01:28:21.661Z",
+  "updated": "2026-11-23T01:28:26.686Z",
   "trades": [
     {
       "id": "T-0001",
@@ -27,6 +27,20 @@
       "quote_symbol": null,
       "notes": "",
       "created": "2026-09-14T06:28:33.662Z"
+    },
+    {
+      "id": "T-0003",
+      "ticker": "LDOS",
+      "side": "LONG",
+      "qty": 1,
+      "entry_date": "2026-11-23",
+      "entry_price": 122.21,
+      "exit_date": null,
+      "exit_price": null,
+      "quote_symbol": null,
+      "notes": "",
+      "from_watch": "W-0004",
+      "created": "2026-11-23T01:28:26.147Z"
     }
   ],
   "watchlist": [
@@ -40,17 +54,6 @@
       "quote_symbol": null,
       "notes": "",
       "created": "2026-09-07T03:06:39.005Z"
-    },
-    {
-      "id": "W-0004",
-      "ticker": "LDOS",
-      "added": "2026-11-10",
-      "price_at_add": 135.76,
-      "target_price": 120,
-      "qty": 1,
-      "quote_symbol": null,
-      "notes": "",
-      "created": "2026-11-10T02:09:35.579Z"
     },
     {
       "id": "W-0002",
